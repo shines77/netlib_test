@@ -1,3 +1,3 @@
 @echo "start test server ..."
-asio_echo_serv.exe 127.0.0.1 8090 64
+asio_echo_serv.exe 192.168.2.154 8090 64
 pause

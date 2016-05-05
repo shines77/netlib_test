@@ -22,112 +22,113 @@ using namespace boost::asio;
 namespace asio_test {
 
 class connection : public std::enable_shared_from_this<connection>,
-				   private boost::noncopyable {
+                   private boost::noncopyable {
 private:
-	enum { PACKET_SIZE = MAX_PACKET_SIZE };
+    enum { PACKET_SIZE = MAX_PACKET_SIZE };
 
-	ip::tcp::socket socket_;
-	std::uint32_t packet_size_;
-	std::uint64_t query_count_;
+    ip::tcp::socket socket_;
+    std::uint32_t packet_size_;
+    std::uint64_t query_count_;
 
-	char data_[PACKET_SIZE];
+    char data_[PACKET_SIZE];
 
 public:
-	connection(boost::asio::io_service & io_service, std::uint32_t packet_size)
-		: socket_(io_service), packet_size_(packet_size), query_count_(0)
-	{
-		::memset(data_, 0, sizeof(data_));
-	}
+    connection(boost::asio::io_service & io_service, std::uint32_t packet_size)
+        : socket_(io_service), packet_size_(packet_size), query_count_(0)
+    {
+        ::memset(data_, 0, sizeof(data_));
+    }
 
-	~connection()
-	{
-		//
-	}
+    ~connection()
+    {
+        //
+    }
 
-	void start()
-	{
-		g_client_count++;
-		do_read();
-	}
+    void start()
+    {
+        g_client_count++;
+        do_read();
+    }
 
-	ip::tcp::socket & socket()
-	{
-		return socket_;
-	}
+    ip::tcp::socket & socket()
+    {
+        return socket_;
+    }
 
-	static boost::shared_ptr<connection> create_new(boost::asio::io_service & io_service, std::uint32_t packet_size) {
-		return boost::shared_ptr<connection>(new connection(io_service, packet_size));
-	}
+    static boost::shared_ptr<connection> create_new(boost::asio::io_service & io_service, std::uint32_t packet_size) {
+        return boost::shared_ptr<connection>(new connection(io_service, packet_size));
+    }
 
 private:
-	void do_read()
-	{
-		//auto self(this->shared_from_this());
+    void do_read()
+    {
+        //auto self(this->shared_from_this());
 #if 0
-		boost::asio::async_read(socket_, boost::asio::buffer(data_, packet_size_),
-			[this](boost::system::error_code ec, std::size_t bytes_transferred)
-			{
-				if (!ec) {
-					// A successful request, can be used to statistic qps
-					do_write();
-				}
-				else {
-					// Write error log
-					std::cout << "connection::do_read() - Error: (code = " << ec.value() << ") "
-						<< ec.message().c_str() << std::endl;
-					g_client_count--;
-					return;
-				}
-			}
-		);
+        boost::asio::async_read(socket_, boost::asio::buffer(data_, packet_size_),
+            [this](boost::system::error_code ec, std::size_t bytes_transferred)
+            {
+                if (!ec) {
+                    // A successful request, can be used to statistic qps
+                    do_write();
+                }
+                else {
+                    // Write error log
+                    std::cout << "connection::do_read() - Error: (code = " << ec.value() << ") "
+                        << ec.message().c_str() << std::endl;
+                    g_client_count--;
+                    return;
+                }
+            }
+        );
 #else
-		socket_.async_read_some(boost::asio::buffer(data_, packet_size_),
-			[this](boost::system::error_code ec, std::size_t bytes_transferred)
-			{
-				if (!ec) {
-					// A successful request, can be used to statistic qps
-					do_write();
-				}
-				else {
-					// Write error log
-					std::cout << "connection::do_read() - Error: (code = " << ec.value() << ") "
-						<< ec.message().c_str() << std::endl;
-					g_client_count--;
-					return;
-				}
-			}
-		);
+        socket_.async_read_some(boost::asio::buffer(data_, packet_size_),
+            [this](boost::system::error_code ec, std::size_t bytes_transferred)
+            {
+                if (!ec) {
+                    // A successful request, can be used to statistic qps
+                    do_write();
+                }
+                else {
+                    // Write error log
+                    std::cout << "connection::do_read() - Error: (code = " << ec.value() << ") "
+                        << ec.message().c_str() << std::endl;
+                    g_client_count--;
+                    return;
+                }
+            }
+        );
 #endif
-	}
+    }
 
-	void do_write()
-	{
-		//auto self(this->shared_from_this());
-		boost::asio::async_write(socket_, boost::asio::buffer(data_, packet_size_),
-			[this](boost::system::error_code ec, std::size_t bytes_transferred)
-			{
-				if (!ec) {
-					do_read();
-					// If get a circle of ping-pong, we count the query one time.
+    void do_write()
+    {
+        //auto self(this->shared_from_this());
+        boost::asio::async_write(socket_, boost::asio::buffer(data_, packet_size_),
+            [this](boost::system::error_code ec, std::size_t bytes_transferred)
+            {
+                if (!ec) {
+                    do_read();
+                    // If get a circle of ping-pong, we count the query one time.
 #if 0
-					g_query_count++;
+                    g_query_count++;
 #else
-					query_count_++;
-					if ((query_count_ & 0x00FF) == 0x00FF) {
-						g_query_count += 0x00FF;
-						query_count_ = 0;
-					}
+                    query_count_++;
+                    if ((query_count_ & 0x00FF) == 0x00FF) {
+                        g_query_count += 0x00FF;
+                        query_count_ = 0;
+                    }
 #endif
-				}
-				else {
-					// Write error log
-					std::cout << "connection::do_write() - Error: (code = " << ec.value() << ") "
-						<< ec.message().c_str() << std::endl;
-					return;
-				}
-			}
-		);
-	}
+                }
+                else {
+                    // Write error log
+                    std::cout << "connection::do_write() - Error: (code = " << ec.value() << ") "
+                        << ec.message().c_str() << std::endl;
+                    g_client_count--;
+                    return;
+                }
+            }
+        );
+    }
 };
 
 } // namespace asio_test
