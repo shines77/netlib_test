@@ -4,7 +4,7 @@ project(netlib_test)
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
 # Single thread mode /ML and /MLd have be deprecated from VS 2003.
-OPTION(BoostOption_USE_MULTITHREADED "Enable Boost's library use multithread" ON)
+option(BoostOption_USE_MULTITHREADED "Enable Boost's library use multithread" ON)
 
 if (WIN32)
     option(BoostOption_USE_STATIC_LIBS "Enable Boost use static library" ON)
@@ -71,7 +71,7 @@ if (WIN32)
             CMAKE_C_FLAGS_RELWITHDEBINFO
             )
         foreach(CompilerFlag ${CompilerFlags})
-            if (${CompilerFlags} MATCHES "/MD")
+            if (${CompilerFlag} MATCHES "/MD")
                 string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
             endif()
         endforeach()
