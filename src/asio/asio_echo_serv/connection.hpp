@@ -50,6 +50,11 @@ public:
         do_read();
     }
 
+    void stop()
+    {
+        //
+    }
+
     ip::tcp::socket & socket()
     {
         return socket_;

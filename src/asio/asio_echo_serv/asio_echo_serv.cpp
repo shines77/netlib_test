@@ -25,8 +25,8 @@
 
 using namespace asio_test;
 
-std::atomic<uint64_t> g_query_count = 0;
-std::atomic<uint32_t> g_client_count = 0;
+std::atomic<uint64_t> g_query_count(0);
+std::atomic<uint32_t> g_client_count(0);
 
 bool is_valid_ip_v4(const std::string & ip)
 {

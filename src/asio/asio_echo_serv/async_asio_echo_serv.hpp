@@ -28,8 +28,7 @@ class async_asio_echo_serv : public boost::enable_shared_from_this<async_asio_ec
 public:
     async_asio_echo_serv(const std::string & ip_addr, const std::string & port,
         std::uint32_t packet_size = 64,
-        std::uint32_t pool_size = std::thread::hardware_concurrency(),
-        boost::system::error_code & ec = boost::system::error_code())
+        std::uint32_t pool_size = std::thread::hardware_concurrency())
         : io_service_pool_(pool_size), packet_size_(packet_size), acceptor_(io_service_pool_.get_io_service())
     {
         ip::tcp::resolver resolver(io_service_pool_.get_now_io_service());
@@ -76,6 +75,7 @@ private:
             std::cout << "async_asio_echo_serv::handle_accept() - Error: (code = " << ec.value() << ") "
                         << ec.message().c_str() << std::endl;
             if (conn) {
+                conn->stop();
                 delete conn;
             }
         }

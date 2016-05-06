@@ -98,7 +98,7 @@ int main(int argc, char * argv[])
     }
 
     std::string app, ip, port;
-    uint32_t packet_size = 0, thread_cnt = 0;
+    uint32_t packet_size = 0;
 
     app = argv[0];
 
