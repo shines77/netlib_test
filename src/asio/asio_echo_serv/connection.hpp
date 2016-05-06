@@ -87,7 +87,7 @@ private:
         );
 #else
         socket_.async_read_some(boost::asio::buffer(data_, packet_size_),
-            [this](boost::system::error_code ec, std::size_t bytes_transferred)
+            [this](boost::system::error_code ec, std::size_t /* bytes_transferred */)
             {
                 if (!ec) {
                     // A successful request, can be used to statistic qps
@@ -109,7 +109,7 @@ private:
     {
         //auto self(this->shared_from_this());
         boost::asio::async_write(socket_, boost::asio::buffer(data_, packet_size_),
-            [this](boost::system::error_code ec, std::size_t bytes_transferred)
+            [this](boost::system::error_code ec, std::size_t /* bytes_transferred */)
             {
                 if (!ec) {
                     do_read();

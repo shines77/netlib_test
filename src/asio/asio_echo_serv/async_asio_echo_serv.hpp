@@ -29,7 +29,7 @@ public:
     async_asio_echo_serv(const std::string & ip_addr, const std::string & port,
         std::uint32_t packet_size = 64,
         std::uint32_t pool_size = std::thread::hardware_concurrency())
-        : io_service_pool_(pool_size), packet_size_(packet_size), acceptor_(io_service_pool_.get_io_service())
+        : io_service_pool_(pool_size), acceptor_(io_service_pool_.get_io_service()), packet_size_(packet_size)
     {
         ip::tcp::resolver resolver(io_service_pool_.get_now_io_service());
         ip::tcp::resolver::query query(ip_addr, port);
@@ -45,8 +45,9 @@ public:
     }
 
     async_asio_echo_serv(short port, std::uint32_t packet_size = 64, std::uint32_t pool_size = std::thread::hardware_concurrency())
-        : io_service_pool_(pool_size), packet_size_(packet_size),
-          acceptor_(io_service_pool_.get_io_service(), ip::tcp::endpoint(ip::tcp::v4(), port))
+        : io_service_pool_(pool_size),
+          acceptor_(io_service_pool_.get_io_service(), ip::tcp::endpoint(ip::tcp::v4(), port)),
+          packet_size_(packet_size)
     {
         do_accept();
     }
