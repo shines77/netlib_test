@@ -25,7 +25,7 @@ public:
         : io_service_(io_service),
           socket_(io_service), packet_size_(packet_size)
     {
-        ::memset(data_, 0, sizeof(data_));
+        ::memset(data_, 'h', sizeof(data_));
         do_connect(endpoint_iterator);
     }
 

@@ -36,7 +36,7 @@ public:
     connection(boost::asio::io_service & io_service, std::uint32_t packet_size)
         : socket_(io_service), packet_size_(packet_size), query_count_(0)
     {
-        ::memset(data_, 0, sizeof(data_));
+        ::memset(data_, 'k', sizeof(data_));
     }
 
     ~connection()
