@@ -166,6 +166,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\src\asio\asio_echo_client\basic_client.hpp" />
+    <ClInclude Include="..\..\..\src\asio\asio_echo_client\boost_asio_msvc.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

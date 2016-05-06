@@ -85,9 +85,6 @@ private:
 
     void do_accept()
     {
-        boost::system::error_code & ec = s_ec;
-        //boost::shared_ptr<connection> new_conn(new connection(io_service_pool_.get_io_service()));
-        //boost::shared_ptr<connection> new_conn = connection::create_new(io_service_pool_.get_io_service());
         connection * new_conn = new connection(io_service_pool_.get_io_service(), packet_size_);
         acceptor_.async_accept(new_conn->socket(), boost::bind(&async_asio_echo_serv::handle_accept,
             this, boost::asio::placeholders::error, new_conn));
@@ -107,9 +104,6 @@ private:
             });
     }
 
-public:
-    static boost::system::error_code s_ec;
-
 private:
     io_service_pool					io_service_pool_;
     boost::asio::ip::tcp::acceptor	acceptor_;
@@ -117,7 +111,5 @@ private:
     std::shared_ptr<std::thread>	thread_;
     std::uint32_t					packet_size_;
 };
-
-boost::system::error_code async_asio_echo_serv::s_ec;
 
 } // namespace asio_test

@@ -15,7 +15,7 @@
 
 using namespace boost::system;
 
-#define MAX_PACKET_SIZE	8192
+#define MAX_PACKET_SIZE	65536
 
 using namespace boost::asio;
 

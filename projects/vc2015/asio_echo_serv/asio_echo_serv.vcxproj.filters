@@ -28,5 +28,8 @@
     <ClInclude Include="..\..\..\src\asio\asio_echo_serv\common.h">
       <Filter>src</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\asio\asio_echo_serv\boost_asio_msvc.h">
+      <Filter>src</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -1,19 +1,5 @@
 
-#if defined(_WIN32) || defined(WIN32) || defined(OS_WINDOWS) || defined(_WINDOWS)
-#if !defined(_WIN32_WINNT) || (_WIN32_WINNT < 0x0501)
-#define _WIN32_WINNT	0x0501
-#endif
-#endif
-
-#ifdef _MSC_VER
-#define BOOST_ASIO_MSVC _MSC_VER
-#endif
-
-# if defined(BOOST_ASIO_MSVC)
-#  if (_MSC_VER >= 1900)
-#   define BOOST_ASIO_ERROR_CATEGORY_NOEXCEPT noexcept(true)
-#  endif // (_MSC_VER >= 1900)
-# endif // defined(BOOST_ASIO_MSVC)
+#include "boost_asio_msvc.h"
 
 #include <iostream>
 #include <string>
@@ -89,8 +75,11 @@ int main(int argc, char * argv[])
         packet_size = atoi(argv[3]);
     if (packet_size <= 0)
         packet_size = 64;
-    if (packet_size > MAX_PACKET_SIZE)
+    if (packet_size > MAX_PACKET_SIZE) {
+        std::cerr << "Warnning: packet_size = " << packet_size << " is more than "
+                  << MAX_PACKET_SIZE << " bytes [MAX_PACKET_SIZE]." << std::endl;
         packet_size = MAX_PACKET_SIZE;
+    }
 
     if (argc > 4)
         thread_cnt = atoi(argv[4]);
@@ -111,7 +100,7 @@ int main(int argc, char * argv[])
     {
         server.run();
 
-        std::cout << "Press [Enter] key to continue ...";
+        std::cout << "press [enter] key to continue ...";
         getchar();
         std::cout << std::endl;
     }
@@ -132,6 +121,8 @@ int main(int argc, char * argv[])
 
     server.join();
 
+#ifdef _WIN32
     ::system("pause");
+#endif
     return 0;
 }
