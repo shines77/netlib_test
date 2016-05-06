@@ -49,7 +49,10 @@ private:
             boost::asio::buffer(data_, packet_size_),
             [this](boost::system::error_code ec, std::size_t /*bytes_transferred*/)
             {
-                do_write();
+                if (!ec)
+                {
+                    do_write();
+                }
             });
     }
 
@@ -59,7 +62,10 @@ private:
             boost::asio::buffer(data_, packet_size_),
             [this](boost::system::error_code ec, std::size_t /*bytes_transferred*/)
             {
-                do_read();
+                if (!ec)
+                {
+                    do_read();
+                }
             });
     }
 };
