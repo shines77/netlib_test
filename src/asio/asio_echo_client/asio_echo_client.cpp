@@ -5,19 +5,13 @@
 #include <string>
 #include <boost/asio.hpp>
 
-#include "basic_client.hpp"
+#include "common.h"
+#include "echo_client.hpp"
 
 using namespace boost::asio;
 
-enum test_mode_t {
-    mode_unknown,
-    mode_pingpong,
-    mode_qps,
-    mode_delay,
-    mode_throughout
-};
-
 std::uint32_t g_mode = mode_pingpong;
+std::string   g_mode_str = "pingpong";
 
 std::string get_app_name(char * app_exe)
 {
@@ -130,7 +124,7 @@ bool get_cmd_value(const std::string & cmd, char sep, std::string & cmd_value)
     return false;
 }
 
-void run_client(const std::string & app_name, const std::string & ip,
+void run_pingpong_client(const std::string & app_name, const std::string & ip,
     const std::string & port, std::uint32_t packet_size)
 {
     std::cout << app_name.c_str() << " begin." << std::endl;
@@ -200,6 +194,7 @@ int main(int argc, char * argv[])
             else {
                 // Write error log: Unknown mode
                 std::cerr << "Error: Unknown mode [" << mode.c_str() << "]." << std::endl;
+                return 1;
             }
         }
     }
@@ -228,7 +223,17 @@ int main(int argc, char * argv[])
         packet_size = MAX_PACKET_SIZE;
     }
 
-    run_client(app_name, ip, port, packet_size);
+    if (g_mode == mode_pingpong)
+        run_pingpong_client(app_name, ip, port, packet_size);
+    else if (g_mode == mode_qps)
+        run_pingpong_client(app_name, ip, port, packet_size);
+    else if (g_mode == mode_delay)
+        run_pingpong_client(app_name, ip, port, packet_size);
+    else if (g_mode == mode_delay)
+        run_pingpong_client(app_name, ip, port, packet_size);
+    else {
+        // Write error log.
+    }
 
     uint32_t loop_times = 0;
     while (true) {

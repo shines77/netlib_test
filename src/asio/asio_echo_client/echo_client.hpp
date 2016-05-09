@@ -5,11 +5,11 @@
 #include <thread>
 #include <boost/asio.hpp>
 
+#include "common.h"
+
 #define MAX_PACKET_SIZE	65536
 
 using namespace boost::asio;
-
-extern std::uint32_t g_mode;
 
 class echo_client
 {
@@ -39,7 +39,7 @@ private:
             {
                 if (!ec)
                 {
-                    do_read();
+                    //do_read();
                     do_write();
                 }
             });
