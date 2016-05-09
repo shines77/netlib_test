@@ -97,7 +97,6 @@ bool is_number_u32(const std::string & str)
     if (str.empty() || str.length() > 5)
         return false;
 
-    unsigned int num = 0;
     std::string::const_iterator iter;
     for (iter = str.begin(); iter != str.end(); ++iter) {
         char ch = *iter;

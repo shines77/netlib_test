@@ -76,7 +76,7 @@ bool is_valid_ip_v4(const std::string & ip)
     std::string::const_iterator iter;
     for (iter = ip.begin(); iter != ip.end(); ++iter) {
         digits = parse_number_u32(iter, ip.end(), num);
-        if ((digits > 0) && (num >= 0 && num < 256)) {
+        if ((digits > 0) && (/*num >= 0 && */num < 256)) {
             num_cnt++;
             if (iter == ip.end())
                 break;
