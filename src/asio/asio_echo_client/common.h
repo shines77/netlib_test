@@ -6,7 +6,7 @@ enum test_mode_t {
     mode_unknown,
     mode_pingpong,
     mode_qps,
-    mode_delay,
+    mode_latency,
     mode_throughout
 };
 

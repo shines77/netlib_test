@@ -7,6 +7,7 @@
 
 #include "common.h"
 #include "echo_client.hpp"
+#include "test_latency_client.hpp"
 
 using namespace boost::asio;
 
@@ -127,7 +128,88 @@ bool get_cmd_value(const std::string & cmd, char sep, std::string & cmd_value)
 void run_pingpong_client(const std::string & app_name, const std::string & ip,
     const std::string & port, std::uint32_t packet_size)
 {
-    std::cout << app_name.c_str() << " begin." << std::endl;
+    std::cout << app_name.c_str() << " mode = " << g_mode_str.c_str() << std::endl;
+    std::cout << std::endl;
+    try
+    {
+        boost::asio::io_service io_service;
+
+        ip::tcp::resolver resolver(io_service);
+        //auto endpoint_iterator = resolver.resolve( {"192.168.2.154", "8090"} );
+        auto endpoint_iterator = resolver.resolve( { ip, port } );
+        echo_client client(io_service, endpoint_iterator, packet_size);
+
+        std::cout << "connectting " << ip.c_str() << ":" << port.c_str() << std::endl;
+        std::cout << "packet_size: " << packet_size << std::endl;
+        std::cout << std::endl;
+
+        io_service.run();
+    }
+    catch (const std::exception& e)
+    {
+        std::cerr << "Exception: " << e.what() << std::endl;
+    }
+    std::cout << app_name.c_str() << " done." << std::endl;
+}
+
+void run_qps_client(const std::string & app_name, const std::string & ip,
+    const std::string & port, std::uint32_t packet_size)
+{
+    std::cout << app_name.c_str() << " mode = " << g_mode_str.c_str() << std::endl;
+    std::cout << std::endl;
+    try
+    {
+        boost::asio::io_service io_service;
+
+        ip::tcp::resolver resolver(io_service);
+        //auto endpoint_iterator = resolver.resolve( {"192.168.2.154", "8090"} );
+        auto endpoint_iterator = resolver.resolve( { ip, port } );
+        echo_client client(io_service, endpoint_iterator, packet_size);
+
+        std::cout << "connectting " << ip.c_str() << ":" << port.c_str() << std::endl;
+        std::cout << "packet_size: " << packet_size << std::endl;
+        std::cout << std::endl;
+
+        io_service.run();
+    }
+    catch (const std::exception& e)
+    {
+        std::cerr << "Exception: " << e.what() << std::endl;
+    }
+    std::cout << app_name.c_str() << " done." << std::endl;
+}
+
+void run_latency_client(const std::string & app_name, const std::string & ip,
+    const std::string & port, std::uint32_t packet_size)
+{
+    std::cout << app_name.c_str() << " mode = " << g_mode_str.c_str() << std::endl;
+    std::cout << std::endl;
+    try
+    {
+        boost::asio::io_service io_service;
+
+        ip::tcp::resolver resolver(io_service);
+        //auto endpoint_iterator = resolver.resolve( {"192.168.2.154", "8090"} );
+        auto endpoint_iterator = resolver.resolve( { ip, port } );
+        test_latency_client client(io_service, endpoint_iterator, packet_size);
+
+        std::cout << "connectting " << ip.c_str() << ":" << port.c_str() << std::endl;
+        std::cout << "packet_size: " << packet_size << std::endl;
+        std::cout << std::endl;
+
+        io_service.run();
+    }
+    catch (const std::exception& e)
+    {
+        std::cerr << "Exception: " << e.what() << std::endl;
+    }
+    std::cout << app_name.c_str() << " done." << std::endl;
+}
+
+void run_throughout_client(const std::string & app_name, const std::string & ip,
+    const std::string & port, std::uint32_t packet_size)
+{
+    std::cout << app_name.c_str() << " mode = " << g_mode_str.c_str() << std::endl;
     std::cout << std::endl;
     try
     {
@@ -154,7 +236,7 @@ void run_pingpong_client(const std::string & app_name, const std::string & ip,
 void print_usage(const std::string & app_name)
 {
     std::cerr << "Usage: " << app_name.c_str() << " <mode=xxxx> <ip> <port> [<packet_size> = 64]" << std::endl
-              << "       mode:        Client run mode, you can choose pingpong, qps, delay and throughout." << std::endl << std::endl
+              << "       mode:        Client run mode, you can choose pingpong, qps, latency and throughout." << std::endl << std::endl
               << "       For example: " << app_name.c_str() << " mode=pingpong 192.168.2.154 8090 64" << std::endl;
 }
 
@@ -183,12 +265,13 @@ int main(int argc, char * argv[])
         g_mode = mode_unknown;
         bool succeed = get_cmd_value(cmd, '=', mode);
         if (succeed) {
+            g_mode_str = mode;
             if (mode == "pingpong")
                 g_mode = mode_pingpong;
             else if (mode == "qps")
                 g_mode = mode_qps;
-            else if (mode == "dealy")
-                g_mode = mode_delay;
+            else if (mode == "latency")
+                g_mode = mode_latency;
             else if (mode == "throughout")
                 g_mode = mode_throughout;
             else {
@@ -226,11 +309,11 @@ int main(int argc, char * argv[])
     if (g_mode == mode_pingpong)
         run_pingpong_client(app_name, ip, port, packet_size);
     else if (g_mode == mode_qps)
-        run_pingpong_client(app_name, ip, port, packet_size);
-    else if (g_mode == mode_delay)
-        run_pingpong_client(app_name, ip, port, packet_size);
-    else if (g_mode == mode_delay)
-        run_pingpong_client(app_name, ip, port, packet_size);
+        run_qps_client(app_name, ip, port, packet_size);
+    else if (g_mode == mode_latency)
+        run_latency_client(app_name, ip, port, packet_size);
+    else if (g_mode == mode_throughout)
+        run_throughout_client(app_name, ip, port, packet_size);
     else {
         // Write error log.
     }

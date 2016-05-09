@@ -31,6 +31,11 @@ public:
         do_connect(endpoint_iterator);
     }
 
+    ~echo_client()
+    {
+        //
+    }
+
 private:
     void do_connect(ip::tcp::resolver::iterator endpoint_iterator)
     {

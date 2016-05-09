@@ -168,6 +168,7 @@
     <ClInclude Include="..\..\..\src\asio\asio_echo_client\echo_client.hpp" />
     <ClInclude Include="..\..\..\src\asio\asio_echo_client\boost_asio_msvc.h" />
     <ClInclude Include="..\..\..\src\asio\asio_echo_client\common.h" />
+    <ClInclude Include="..\..\..\src\asio\asio_echo_client\test_latency_client.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
