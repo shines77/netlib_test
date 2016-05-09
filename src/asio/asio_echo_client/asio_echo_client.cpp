@@ -39,7 +39,7 @@ int parse_number_u32(std::string::const_iterator & iterBegin,
 {
     int n = 0, digits = 0;
     std::string::const_iterator & iter = iterBegin;
-    for (iter; iter != iterEnd; ++iter) {
+    for (; iter != iterEnd; ++iter) {
         char ch = *iter;
         if (ch >= '0' && ch <= '9') {
             n = n * 10 + ch - '0';
@@ -60,7 +60,8 @@ int parse_number_u32(std::string::const_iterator & iterBegin,
 
 int parse_number_u32(const std::string & str, unsigned int & num)
 {
-    return parse_number_u32(str.begin(), str.end(), num);
+    std::string::const_iterator iter = str.begin();
+    return parse_number_u32(iter, str.end(), num);
 }
 
 bool is_valid_ip_v4(const std::string & ip)
@@ -94,7 +95,6 @@ bool is_number_u32(const std::string & str)
     if (str.empty() || str.length() > 5)
         return false;
 
-    unsigned int num = 0;
     std::string::const_iterator iter;
     for (iter = str.begin(); iter != str.end(); ++iter) {
         char ch = *iter;
