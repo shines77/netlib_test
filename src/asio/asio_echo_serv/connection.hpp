@@ -119,7 +119,7 @@ private:
 #else
                     query_count_++;
                     if ((query_count_ & 0x00FF) == 0x00FF) {
-                        g_query_count += 0x00FF;
+                        g_query_count.fetch_add(0x00FF);
                         query_count_ = 0;
                     }
 #endif

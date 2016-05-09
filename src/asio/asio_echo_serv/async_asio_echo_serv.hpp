@@ -29,7 +29,27 @@ public:
     async_asio_echo_serv(const std::string & ip_addr, const std::string & port,
         std::uint32_t packet_size = 64,
         std::uint32_t pool_size = std::thread::hardware_concurrency())
-        : io_service_pool_(pool_size), acceptor_(io_service_pool_.get_io_service()), packet_size_(packet_size)
+        : io_service_pool_(pool_size), acceptor_(io_service_pool_.get_first_io_service()),
+          packet_size_(packet_size)
+    {
+        start(ip_addr, port);
+    }
+
+    async_asio_echo_serv(short port, std::uint32_t packet_size = 64,
+        std::uint32_t pool_size = std::thread::hardware_concurrency())
+        : io_service_pool_(pool_size),
+          acceptor_(io_service_pool_.get_first_io_service(), ip::tcp::endpoint(ip::tcp::v4(), port)),
+          packet_size_(packet_size)
+    {
+        do_accept();
+    }
+
+    ~async_asio_echo_serv()
+    {
+        this->stop();
+    }
+
+    void start(const std::string & ip_addr, const std::string & port)
     {
         ip::tcp::resolver resolver(io_service_pool_.get_now_io_service());
         ip::tcp::resolver::query query(ip_addr, port);
@@ -44,12 +64,9 @@ public:
         do_accept();
     }
 
-    async_asio_echo_serv(short port, std::uint32_t packet_size = 64, std::uint32_t pool_size = std::thread::hardware_concurrency())
-        : io_service_pool_(pool_size),
-          acceptor_(io_service_pool_.get_io_service(), ip::tcp::endpoint(ip::tcp::v4(), port)),
-          packet_size_(packet_size)
+    void stop()
     {
-        do_accept();
+        acceptor_.cancel();
     }
 
     void run()
@@ -74,7 +91,7 @@ private:
         else {
             // Write error log
             std::cout << "async_asio_echo_serv::handle_accept() - Error: (code = " << ec.value() << ") "
-                        << ec.message().c_str() << std::endl;
+                      << ec.message().c_str() << std::endl;
             if (conn) {
                 conn->stop();
                 delete conn;
@@ -99,6 +116,10 @@ private:
             {
                 if (!ec) {
                     conn_->start();
+                }
+                else {
+                    conn_->stop();
+                    conn_.reset();
                 }
 
                 do_accept2();

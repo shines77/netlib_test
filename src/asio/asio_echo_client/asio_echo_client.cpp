@@ -9,26 +9,56 @@
 
 using namespace boost::asio;
 
+enum test_mode_t {
+    mode_unknown,
+    mode_pingpong,
+    mode_qps,
+    mode_delay,
+    mode_throughout
+};
+
+std::uint32_t g_mode = mode_pingpong;
+
+std::string get_app_name(char * app_exe)
+{
+    std::string app_name;
+    std::size_t len = std::strlen(app_exe);
+    char * end_ptr = app_exe;
+    char * begin_ptr = app_exe + len;
+    char * cur_ptr = begin_ptr;
+    while (cur_ptr >= end_ptr) {
+        if (*cur_ptr == '/' || *cur_ptr == '\\') {
+            if (cur_ptr != begin_ptr) {
+                break;
+            }
+        }
+        cur_ptr--;
+    }
+    cur_ptr++;
+    app_name = cur_ptr;
+    return app_name;
+}
+
 int parse_number_u32(std::string::const_iterator & iterBegin,
     const std::string::const_iterator & iterEnd, unsigned int & num)
 {
     int n = 0, digits = 0;
-    std::string::const_iterator iter;
-    for (iter = iterBegin; iter != iterEnd; ++iter) {
+    std::string::const_iterator & iter = iterBegin;
+    for (iter; iter != iterEnd; ++iter) {
         char ch = *iter;
         if (ch >= '0' && ch <= '9') {
             n = n * 10 + ch - '0';
             digits++;
         }
         else {
-            if (digits > 0) {
-                if (digits <= 10)
-                    num = n;
-                else
-                    digits = 0;
-            }
             break;
         }
+    }
+    if (digits > 0) {
+        if (digits <= 10)
+            num = n;
+        else
+            digits = 0;
     }
     return digits;
 }
@@ -50,6 +80,8 @@ bool is_valid_ip_v4(const std::string & ip)
     for (iter = ip.begin(); iter != ip.end(); ++iter) {
         digits = parse_number_u32(iter, ip.end(), num);
         if ((digits > 0) && (num >= 0 && num < 256)) {
+            if (iter == ip.end())
+                break;
             char ch = *iter;
             if (ch == '.')
                 dots++;
@@ -84,10 +116,24 @@ bool is_socket_port(const std::string & port)
     return ((digits > 0) && (port_num > 0 && port_num < 65536));
 }
 
-void run_client(const std::string & app, const std::string & ip,
+bool get_cmd_value(const std::string & cmd, char sep, std::string & cmd_value)
+{
+    std::string::const_iterator iter;
+    for (iter = cmd.begin(); iter != cmd.end(); ++iter) {
+        char ch = *iter;
+        if (ch == sep) {
+            ++iter;
+            cmd_value = cmd.substr(iter - cmd.begin());
+            return true;
+        }
+    }
+    return false;
+}
+
+void run_client(const std::string & app_name, const std::string & ip,
     const std::string & port, std::uint32_t packet_size)
 {
-    std::cout << app.c_str() << " begin." << std::endl;
+    std::cout << app_name.c_str() << " begin." << std::endl;
     std::cout << std::endl;
     try
     {
@@ -95,7 +141,6 @@ void run_client(const std::string & app, const std::string & ip,
 
         ip::tcp::resolver resolver(io_service);
         //auto endpoint_iterator = resolver.resolve( {"192.168.2.154", "8090"} );
-        //auto endpoint_iterator = resolver.resolve( {"192.168.2.191", "8090"} );
         auto endpoint_iterator = resolver.resolve( { ip, port } );
         echo_client client(io_service, endpoint_iterator, packet_size);
 
@@ -107,33 +152,74 @@ void run_client(const std::string & app, const std::string & ip,
     }
     catch (const std::exception& e)
     {
-        std::cerr << "Exception: " << e.what() << "\n";
+        std::cerr << "Exception: " << e.what() << std::endl;
     }
-    std::cout << app.c_str() << " done." << std::endl;
+    std::cout << app_name.c_str() << " done." << std::endl;
+}
+
+void print_usage(const std::string & app_name)
+{
+    std::cerr << "Usage: " << app_name.c_str() << " <mode=xxxx> <ip> <port> [<packet_size> = 64]" << std::endl
+              << "       mode:        Client run mode, you can choose pingpong, qps, delay and throughout." << std::endl << std::endl
+              << "       For example: " << app_name.c_str() << " mode=pingpong 192.168.2.154 8090 64" << std::endl;
 }
 
 int main(int argc, char * argv[])
 {
-    if (argc <= 2) {
-        std::cerr << "Usage: " << argv[0] << " <ip> <port> [<packet_size> = 64]" << std::endl;
+    std::string app_name;
+    app_name = get_app_name(argv[0]);
+
+    int has_mode;
+    if (argc >= 2 && std::strncmp(argv[1], "mode=", sizeof("mode=") - 1) == 0)
+        has_mode = 1;
+    else
+        has_mode = 0;
+
+    if (argc <= (2 + has_mode) || (argc >= 2
+        && (std::strcmp(argv[1], "--help") == 0 || std::strcmp(argv[1], "-h") == 0))) {
+        print_usage(app_name);
         return 1;
     }
 
-    std::string app, ip, port;
+    std::string ip, port, cmd, mode;
     uint32_t packet_size = 0;
 
-    app = argv[0];
+    if (has_mode == 1) {
+        cmd = argv[1];
+        g_mode = mode_unknown;
+        bool succeed = get_cmd_value(cmd, '=', mode);
+        if (succeed) {
+            if (mode == "pingpong")
+                g_mode = mode_pingpong;
+            else if (mode == "qps")
+                g_mode = mode_qps;
+            else if (mode == "dealy")
+                g_mode = mode_delay;
+            else if (mode == "throughout")
+                g_mode = mode_throughout;
+            else {
+                // Write error log: Unknown mode
+                std::cerr << "Error: Unknown mode [" << mode.c_str() << "]." << std::endl;
+            }
+        }
+    }
 
-    ip = argv[1];
-    if (!is_valid_ip_v4(ip))
-        ip = "127.0.0.1";
+    ip = argv[1 + has_mode];
+    if (!is_valid_ip_v4(ip)) {
+        //ip = "127.0.0.1";
+        std::cerr << "Error: ip address \"" << argv[1 + has_mode] << "\" format is wrong." << std::endl;
+        return 1;
+    }
 
-    port = argv[2];
-    if (!is_socket_port(port))
-        port = "8090";
+    port = argv[2 + has_mode];
+    if (!is_socket_port(port)) {
+        //port = "8090";
+        std::cerr << "Error: port [" << argv[2 + has_mode] << "] number must be range in (0, 65535]." << std::endl;
+        return 1;
+    }
 
-    if (argc > 3)
-        packet_size = atoi(argv[3]);
+    if (argc > (3 + has_mode))
+        packet_size = atoi(argv[3 + has_mode]);
     if (packet_size <= 0)
         packet_size = 64;
     if (packet_size > MAX_PACKET_SIZE) {
@@ -141,10 +227,10 @@ int main(int argc, char * argv[])
                   << MAX_PACKET_SIZE << " bytes [MAX_PACKET_SIZE]." << std::endl;
         packet_size = MAX_PACKET_SIZE;
     }
-    run_client(app, ip, port, packet_size);
+
+    run_client(app_name, ip, port, packet_size);
 
     uint32_t loop_times = 0;
-
     while (true) {
         std::cout << loop_times << std::endl;
         loop_times++;

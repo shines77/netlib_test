@@ -9,6 +9,8 @@
 
 using namespace boost::asio;
 
+extern std::uint32_t g_mode;
+
 class echo_client
 {
 private:
