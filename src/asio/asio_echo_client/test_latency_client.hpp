@@ -71,14 +71,14 @@ private:
                 avg_latency = (last_total_latency_ * 1000.0) / (double)last_query_count_;
             else
                 avg_latency = 0.0;
-            std::cout << "average latency       = " << avg_latency << " ms, query_count = " << last_query_count_ << std::endl;
+            std::cout << "average latency       = " << avg_latency << " ms, query_count       = " << last_query_count_ << std::endl;
 
             // average latency total
             if (total_query_count_ != 0)
                 avg_total_latency = (total_latency_ * 1000.0) / (double)total_query_count_;
             else
                 avg_total_latency = 0.0;
-            std::cout << "average latency total = " << avg_total_latency << " ms, query_count = " << total_query_count_ << std::endl;
+            std::cout << "average latency total = " << avg_total_latency << " ms, query_count total = " << total_query_count_ << std::endl;
             std::cout << std::endl;
 
             // Reset the counters
