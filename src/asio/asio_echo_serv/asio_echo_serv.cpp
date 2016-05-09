@@ -14,36 +14,63 @@ using namespace asio_test;
 std::atomic<uint64_t> g_query_count(0);
 std::atomic<uint32_t> g_client_count(0);
 
+int parse_number_u32(std::string::const_iterator & iterBegin,
+    const std::string::const_iterator & iterEnd, unsigned int & num)
+{
+    int n = 0, digits = 0;
+    std::string::const_iterator iter;
+    for (iter = iterBegin; iter != iterEnd; ++iter) {
+        char ch = *iter;
+        if (ch >= '0' && ch <= '9') {
+            n = n * 10 + ch - '0';
+            digits++;
+        }
+        else {
+            if (digits > 0) {
+                if (digits <= 10)
+                    num = n;
+                else
+                    digits = 0;
+            }
+            break;
+        }
+    }
+    return digits;
+}
+
+int parse_number_u32(const std::string & str, unsigned int & num)
+{
+    return parse_number_u32(str.begin(), str.end(), num);
+}
+
 bool is_valid_ip_v4(const std::string & ip)
 {
     if (ip.empty() || ip.length() > 15)
         return false;
 
-    int dot_cnt = 0;
-    int num_cnt = 0;
+    unsigned int num;
+    int digits = 0;
+    int dots = 0;
     std::string::const_iterator iter;
     for (iter = ip.begin(); iter != ip.end(); ++iter) {
-        char ch = *iter;
-        if ((ch < '0' || ch > '9') && (ch != '.'))
-            return false;
-        if (ch >= '0' && ch <= '9') {
-            num_cnt++;
-        }
-        else if (ch == '.') {
-            if (num_cnt <= 0 || num_cnt > 3)
-                return false;
-            dot_cnt++;
-            num_cnt = 0;
+        digits = parse_number_u32(iter, ip.end(), num);
+        if ((digits > 0) && (num >= 0 && num < 256)) {
+            char ch = *iter;
+            if (ch == '.')
+                dots++;
+            else
+                break;
         }
     }
-    return (dot_cnt == 3);
+    return (dots == 3);
 }
 
-bool is_number(const std::string & str)
+bool is_number_u32(const std::string & str)
 {
     if (str.empty() || str.length() > 5)
         return false;
 
+    unsigned int num = 0;
     std::string::const_iterator iter;
     for (iter = str.begin(); iter != str.end(); ++iter) {
         char ch = *iter;
@@ -51,6 +78,13 @@ bool is_number(const std::string & str)
             return false;
     }
     return true;
+}
+
+bool is_socket_port(const std::string & port)
+{
+    unsigned int port_num = 0;
+    int digits = parse_number_u32(port, port_num);
+    return ((digits > 0) && (port_num > 0 && port_num < 65536));
 }
 
 int main(int argc, char * argv[])
@@ -68,7 +102,7 @@ int main(int argc, char * argv[])
         ip = "127.0.0.1";
 
     port = argv[2];
-    if (!is_number(port))
+    if (!is_socket_port(port))
         port = "8090";
 
     if (argc > 3)
