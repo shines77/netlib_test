@@ -61,6 +61,8 @@ bool is_valid_ip_v4(const std::string & ip)
             else
                 break;
         }
+        else
+            return false;
     }
     return (dots == 3);
 }
