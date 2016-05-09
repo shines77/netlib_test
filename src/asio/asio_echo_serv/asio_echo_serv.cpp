@@ -72,10 +72,12 @@ bool is_valid_ip_v4(const std::string & ip)
     unsigned int num;
     int digits = 0;
     int dots = 0;
+    int num_cnt = 0;
     std::string::const_iterator iter;
     for (iter = ip.begin(); iter != ip.end(); ++iter) {
         digits = parse_number_u32(iter, ip.end(), num);
         if ((digits > 0) && (num >= 0 && num < 256)) {
+            num_cnt++;
             if (iter == ip.end())
                 break;
             char ch = *iter;
@@ -87,7 +89,7 @@ bool is_valid_ip_v4(const std::string & ip)
         else
             return false;
     }
-    return (dots == 3);
+    return (dots == 3 && num_cnt == 4);
 }
 
 bool is_number_u32(const std::string & str)
