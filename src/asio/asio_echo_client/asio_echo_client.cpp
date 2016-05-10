@@ -10,6 +10,7 @@
 #include "test_latency_client.hpp"
 
 using namespace boost::asio;
+using namespace asio_test;
 
 std::uint32_t g_mode = mode_pingpong;
 std::string   g_mode_str = "pingpong";

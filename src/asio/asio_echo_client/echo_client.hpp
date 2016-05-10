@@ -11,6 +11,8 @@
 
 using namespace boost::asio;
 
+namespace asio_test {
+
 class echo_client
 {
 private:
@@ -76,3 +78,5 @@ private:
             });
     }
 };
+
+} // namespace asio_test

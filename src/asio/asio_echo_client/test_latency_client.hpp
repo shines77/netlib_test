@@ -14,6 +14,8 @@
 using namespace boost::asio;
 using namespace std::chrono;
 
+namespace asio_test {
+
 class test_latency_client
 {
 private:
@@ -67,7 +69,7 @@ private:
         duration<double> interval_time = duration_cast< duration<double> >(now_time - last_time_);
         double avg_latency, avg_total_latency;
         if (interval_time.count() > 1.0) {
-            std::cout << "packet_size           = " << std::right << std::setw(8) <<  packet_size_ << " B,  latency total     = "
+            std::cout << "packet_size           = " << std::left << std::setw(8) <<  packet_size_ << " B,  latency total     = "
                       << last_total_latency_ << " ms" <<  std::endl;
             // average latency (one second interval)
             if (last_query_count_ != 0)
@@ -145,3 +147,5 @@ private:
             });
     }
 };
+
+} // namespace asio_test
