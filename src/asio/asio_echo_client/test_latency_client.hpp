@@ -66,7 +66,8 @@ private:
         duration<double> interval_time = duration_cast< duration<double> >(now_time - last_time_);
         double avg_latency, avg_total_latency;
         if (interval_time.count() > 1.0) {
-            std::cout << "packet_size =" << packet_size_ << " B, latency total = " << last_total_latency_ << " ms" <<  std::endl;
+            std::cout << "packet_size = " << packet_size_ << " B,                 latency total = "
+                      << last_total_latency_ << " ms" <<  std::endl;
             // average latency (one second interval)
             if (last_query_count_ != 0)
                 avg_latency = (last_total_latency_ * 1000.0) / (double)last_query_count_;
