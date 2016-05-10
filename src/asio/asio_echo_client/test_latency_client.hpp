@@ -95,7 +95,7 @@ private:
             {
                 if (!ec)
                 {
-                    do_read();
+                    //do_read();
                     do_write();
                 }
             });
