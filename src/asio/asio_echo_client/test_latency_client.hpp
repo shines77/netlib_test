@@ -2,6 +2,7 @@
 #pragma once
 
 #include <iostream>
+#include <iomanip>      // For std::setw()
 #include <thread>
 #include <chrono>
 #include <boost/asio.hpp>
@@ -66,14 +67,14 @@ private:
         duration<double> interval_time = duration_cast< duration<double> >(now_time - last_time_);
         double avg_latency, avg_total_latency;
         if (interval_time.count() > 1.0) {
-            std::cout << "packet_size           = " << packet_size_ << " B,      latency total     = "
+            std::cout << "packet_size           = " << std::right << std::setw(8) <<  packet_size_ << " B,  latency total     = "
                       << last_total_latency_ << " ms" <<  std::endl;
             // average latency (one second interval)
             if (last_query_count_ != 0)
                 avg_latency = (last_total_latency_ * 1000.0) / (double)last_query_count_;
             else
                 avg_latency = 0.0;
-            std::cout << "average latency       = " << avg_latency
+            std::cout << "average latency       = " << std::left << std::setw(8) << avg_latency
                       << " ms, query count       = " << last_query_count_ << std::endl;
 
             // average latency total
@@ -81,7 +82,7 @@ private:
                 avg_total_latency = (total_latency_ * 1000.0) / (double)total_query_count_;
             else
                 avg_total_latency = 0.0;
-            std::cout << "average latency total = " << avg_total_latency
+            std::cout << "average latency total = " << std::left << std::setw(8) << avg_total_latency
                       << " ms, query count total = " << total_query_count_ << std::endl;
             std::cout << std::endl;
 

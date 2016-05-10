@@ -173,7 +173,7 @@ int main(int argc, char * argv[])
         async_asio_echo_serv server(ip, port, packet_size, thread_cnt);
         server.run();
 
-        std::cout << "Server has bind and listening ...";
+        std::cout << "Server has bind and listening ..." << std::endl;
         //std::cout << "press [enter] key to continue ...";
         //getchar();
         std::cout << std::endl;
