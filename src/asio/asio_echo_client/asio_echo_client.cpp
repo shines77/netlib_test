@@ -320,13 +320,6 @@ int main(int argc, char * argv[])
         // Write error log.
     }
 
-    uint32_t loop_times = 0;
-    while (true) {
-        std::cout << loop_times << std::endl;
-        loop_times++;
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-    }
-
 #ifdef _WIN32
     ::system("pause");
 #endif

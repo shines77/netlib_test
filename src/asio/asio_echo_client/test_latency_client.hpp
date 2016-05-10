@@ -66,19 +66,22 @@ private:
         duration<double> interval_time = duration_cast< duration<double> >(now_time - last_time_);
         double avg_latency, avg_total_latency;
         if (interval_time.count() > 1.0) {
+            std::cout << "packet_size =" << packet_size_ << " B, latency total = " << last_total_latency_ << " ms" <<  std::endl;
             // average latency (one second interval)
             if (last_query_count_ != 0)
                 avg_latency = (last_total_latency_ * 1000.0) / (double)last_query_count_;
             else
                 avg_latency = 0.0;
-            std::cout << "average latency       = " << avg_latency << " ms, query_count       = " << last_query_count_ << std::endl;
+            std::cout << "average latency       = " << avg_latency
+                      << " ms, query count       = " << last_query_count_ << std::endl;
 
             // average latency total
             if (total_query_count_ != 0)
                 avg_total_latency = (total_latency_ * 1000.0) / (double)total_query_count_;
             else
                 avg_total_latency = 0.0;
-            std::cout << "average latency total = " << avg_total_latency << " ms, query_count total = " << total_query_count_ << std::endl;
+            std::cout << "average latency total = " << avg_total_latency
+                      << " ms, query count total = " << total_query_count_ << std::endl;
             std::cout << std::endl;
 
             // Reset the counters
@@ -105,8 +108,12 @@ private:
     {
         boost::asio::async_read(socket_,
             boost::asio::buffer(data_, packet_size_),
-            [this](boost::system::error_code ec, std::size_t /*bytes_transferred*/)
+            [this](boost::system::error_code ec, std::size_t bytes_transferred)
             {
+                if ((uint32_t)bytes_transferred != packet_size_) {
+                    std::cout << "test_latency_client::do_read(): async_read(), bytes_transferred = "
+                              << bytes_transferred << " bytes." << std::endl;
+                }
                 if (!ec)
                 {
                     // Have recieved the response message
@@ -123,8 +130,12 @@ private:
         send_time_ = high_resolution_clock::now();
         boost::asio::async_write(socket_,
             boost::asio::buffer(data_, packet_size_),
-            [this](boost::system::error_code ec, std::size_t /*bytes_transferred*/)
+            [this](boost::system::error_code ec, std::size_t bytes_transferred)
             {
+                if ((uint32_t)bytes_transferred != packet_size_) {
+                    std::cout << "test_latency_client::do_write(): async_write(), bytes_transferred = "
+                              << bytes_transferred << " bytes." << std::endl;
+                }
                 if (!ec)
                 {
                     do_read();

@@ -68,10 +68,14 @@ private:
     void do_read()
     {
         //auto self(this->shared_from_this());
-#if 0
+#if 1
         boost::asio::async_read(socket_, boost::asio::buffer(data_, packet_size_),
             [this](boost::system::error_code ec, std::size_t bytes_transferred)
             {
+                if ((uint32_t)bytes_transferred != packet_size_) {
+                    std::cout << "connection::do_read(): async_read(), bytes_transferred = "
+                              << bytes_transferred << " bytes." << std::endl;
+                }
                 if (!ec) {
                     // A successful request, can be used to statistic qps
                     do_write();
@@ -89,6 +93,10 @@ private:
         socket_.async_read_some(boost::asio::buffer(data_, packet_size_),
             [this](boost::system::error_code ec, std::size_t /* bytes_transferred */)
             {
+                if ((uint32_t)bytes_transferred != packet_size_) {
+                    std::cout << "connection::do_read(): async_read(), bytes_transferred = "
+                              << bytes_transferred << " bytes." << std::endl;
+                }
                 if (!ec) {
                     // A successful request, can be used to statistic qps
                     do_write();
@@ -109,9 +117,14 @@ private:
     {
         //auto self(this->shared_from_this());
         boost::asio::async_write(socket_, boost::asio::buffer(data_, packet_size_),
-            [this](boost::system::error_code ec, std::size_t /* bytes_transferred */)
+            [this](boost::system::error_code ec, std::size_t bytes_transferred)
             {
                 if (!ec) {
+                    if ((uint32_t)bytes_transferred != packet_size_) {
+                        std::cout << "connection::do_write(): async_write(), bytes_transferred = "
+                                  << bytes_transferred << " bytes." << std::endl;
+                    }
+
                     do_read();
                     // If get a circle of ping-pong, we count the query one time.
 #if 0
