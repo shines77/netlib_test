@@ -186,7 +186,7 @@ int main(int argc, char * argv[])
         while (true) {
             auto curr_succeed_count = (std::uint64_t)g_query_count;
             auto client_count = (std::uint32_t)g_client_count;
-            std::cout << "[" << client_count << "] conn - " << thread_cnt << " thread : " << packet_size << "B : qps = "
+            std::cout << "[" << client_count << "] conn - " << thread_cnt << " thread : " << packet_size << " B : qps = "
                       << (curr_succeed_count - last_query_count) << std::endl;
             last_query_count = curr_succeed_count;
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));

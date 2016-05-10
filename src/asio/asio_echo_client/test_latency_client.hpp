@@ -27,7 +27,7 @@ private:
 
     uint64_t last_query_count_;
     uint64_t total_query_count_;
-    double last_total_latency_;   
+    double last_total_latency_;
     double total_latency_;
 
     duration<double> elapsed_time_;
@@ -69,23 +69,26 @@ private:
         duration<double> interval_time = duration_cast< duration<double> >(now_time - last_time_);
         double avg_latency, avg_total_latency;
         if (interval_time.count() > 1.0) {
-            std::cout << "packet_size           = " << std::left << std::setw(8) <<  packet_size_ << " B,  latency total     = "
+            std::cout << "packet_size           = " << std::left << std::setw(8)
+                      << packet_size_ << " B,  latency total     = "
                       << last_total_latency_ << " ms" <<  std::endl;
             // average latency (one second interval)
             if (last_query_count_ != 0)
                 avg_latency = (last_total_latency_ * 1000.0) / (double)last_query_count_;
             else
                 avg_latency = 0.0;
-            std::cout << "average latency       = " << std::left << std::setw(8) << avg_latency
-                      << " ms, query count       = " << last_query_count_ << std::endl;
+            std::cout << "average latency       = " << std::left << std::setw(8)
+                      << std::setiosflags(std::ios::fixed) << std::setprecision(6)
+                      << avg_latency << " ms, query count       = " << last_query_count_ << std::endl;
 
             // average latency total
             if (total_query_count_ != 0)
                 avg_total_latency = (total_latency_ * 1000.0) / (double)total_query_count_;
             else
                 avg_total_latency = 0.0;
-            std::cout << "average latency total = " << std::left << std::setw(8) << avg_total_latency
-                      << " ms, query count total = " << total_query_count_ << std::endl;
+            std::cout << "average latency total = " << std::left << std::setw(8)
+                      << std::setiosflags(std::ios::fixed) << std::setprecision(6)
+                      << avg_total_latency << " ms, query count total = " << total_query_count_ << std::endl;
             std::cout << std::endl;
 
             // Reset the counters
