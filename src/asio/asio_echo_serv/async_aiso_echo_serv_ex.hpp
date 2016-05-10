@@ -56,7 +56,15 @@ public:
         ip::tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
         boost::asio::ip::tcp::endpoint endpoint = *resolver.resolve(query);
 
-        acceptor_.open(endpoint.protocol());
+        boost::system::error_code ec;
+        acceptor_.open(endpoint.protocol(), ec);
+        if (ec) {
+            // Open endpoint error
+            std::cout << "async_asio_echo_serv_ex::start() - Error: (code = " << ec.value() << ") "
+                        << ec.message().c_str() << std::endl;
+            return;
+        }
+
         acceptor_.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
         acceptor_.bind(endpoint);
         acceptor_.listen();
@@ -81,20 +89,20 @@ public:
     }
 
 private:
-    void handle_accept(const boost::system::error_code & ec, connection * conn)
+    void handle_accept(const boost::system::error_code & ec, asio_session * session)
     {
         if (!ec) {
-            if (conn) {
-                conn->start();
+            if (session) {
+                session->start();
             }
         }
         else {
-            // Write error log
+            // Accept error
             std::cout << "async_asio_echo_serv_ex::handle_accept() - Error: (code = " << ec.value() << ") "
                       << ec.message().c_str() << std::endl;
-            if (conn) {
-                conn->stop();
-                delete conn;
+            if (session) {
+                session->stop();
+                delete session;
             }
         }
 
@@ -103,23 +111,26 @@ private:
 
     void do_accept()
     {
-        connection * new_conn = new connection(io_service_pool_.get_io_service(), packet_size_);
-        acceptor_.async_accept(new_conn->socket(), boost::bind(&async_asio_echo_serv_ex::handle_accept,
-            this, boost::asio::placeholders::error, new_conn));
+        asio_session * new_session = new asio_session(io_service_pool_.get_io_service(), packet_size_);
+        acceptor_.async_accept(new_session->socket(), boost::bind(&async_asio_echo_serv_ex::handle_accept,
+            this, boost::asio::placeholders::error, new_session));
     }
 
     void do_accept2()
     {
-        conn_.reset(new connection(io_service_pool_.get_io_service(), packet_size_));
-        acceptor_.async_accept(conn_->socket(),
+        session_.reset(new asio_session(io_service_pool_.get_io_service(), packet_size_));
+        acceptor_.async_accept(session_->socket(),
             [this](boost::system::error_code ec)
             {
                 if (!ec) {
-                    conn_->start();
+                    session_->start();
                 }
                 else {
-                    conn_->stop();
-                    conn_.reset();
+                    // Accept error
+                    std::cout << "async_asio_echo_serv_ex::handle_accept2() - Error: (code = " << ec.value() << ") "
+                              << ec.message().c_str() << std::endl;
+                    session_->stop();
+                    session_.reset();
                 }
 
                 do_accept2();
@@ -129,7 +140,7 @@ private:
 private:
     io_service_pool					io_service_pool_;
     boost::asio::ip::tcp::acceptor	acceptor_;
-    std::shared_ptr<asio_session>	conn_;
+    std::shared_ptr<asio_session>	session_;
     std::shared_ptr<std::thread>	thread_;
     std::uint32_t					packet_size_;
 };

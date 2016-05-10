@@ -7,12 +7,16 @@
 #include <chrono>
 #include <exception>
 
+#include "common.h"
 #include "async_asio_echo_serv.hpp"
 
-using namespace asio_test;
+std::atomic<uint64_t> g_query_count_(0);
+std::atomic<uint32_t> g_client_count_ = 0;
 
-std::atomic<uint64_t> g_query_count(0);
-std::atomic<uint32_t> g_client_count(0);
+asio_test::padding_atomic<uint64_t> asio_test::g_query_count(0);
+asio_test::padding_atomic<uint32_t> asio_test::g_client_count = 0;
+
+using namespace asio_test;
 
 std::string get_app_name(char * app_exe)
 {

@@ -168,9 +168,10 @@
     <ClInclude Include="..\..\..\src\asio\asio_echo_serv\asio_session.hpp" />
     <ClInclude Include="..\..\..\src\asio\asio_echo_serv\async_aiso_echo_serv_ex.hpp" />
     <ClInclude Include="..\..\..\src\asio\asio_echo_serv\async_asio_echo_serv.hpp" />
+    <ClInclude Include="..\..\..\src\asio\asio_echo_serv\padding_atomic.hpp" />
     <ClInclude Include="..\..\..\src\asio\asio_echo_serv\boost_asio_msvc.h" />
     <ClInclude Include="..\..\..\src\asio\asio_echo_serv\common.h" />
-    <ClInclude Include="..\..\..\src\asio\asio_echo_serv\connection.hpp" />
+    <ClInclude Include="..\..\..\src\asio\asio_echo_serv\asio_connection.hpp" />
     <ClInclude Include="..\..\..\src\asio\asio_echo_serv\io_service_pool.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

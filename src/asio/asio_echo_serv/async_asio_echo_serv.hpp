@@ -13,7 +13,7 @@
 
 #include "common.h"
 #include "io_service_pool.hpp"
-#include "connection.hpp"
+#include "asio_connection.hpp"
 
 using namespace boost::asio;
 
@@ -81,7 +81,7 @@ public:
     }
 
 private:
-    void handle_accept(const boost::system::error_code & ec, connection * conn)
+    void handle_accept(const boost::system::error_code & ec, asio_connection * conn)
     {
         if (!ec) {
             if (conn) {
@@ -89,7 +89,7 @@ private:
             }
         }
         else {
-            // Write error log
+            // Accept error
             std::cout << "async_asio_echo_serv::handle_accept() - Error: (code = " << ec.value() << ") "
                       << ec.message().c_str() << std::endl;
             if (conn) {
@@ -103,14 +103,14 @@ private:
 
     void do_accept()
     {
-        connection * new_conn = new connection(io_service_pool_.get_io_service(), packet_size_);
+        asio_connection * new_conn = new asio_connection(io_service_pool_.get_io_service(), packet_size_);
         acceptor_.async_accept(new_conn->socket(), boost::bind(&async_asio_echo_serv::handle_accept,
             this, boost::asio::placeholders::error, new_conn));
     }
 
     void do_accept2()
     {
-        conn_.reset(new connection(io_service_pool_.get_io_service(), packet_size_));
+        conn_.reset(new asio_connection(io_service_pool_.get_io_service(), packet_size_));
         acceptor_.async_accept(conn_->socket(),
             [this](boost::system::error_code ec)
             {
@@ -118,6 +118,9 @@ private:
                     conn_->start();
                 }
                 else {
+                    // Accept error
+                    std::cout << "async_asio_echo_serv::handle_accept2() - Error: (code = " << ec.value() << ") "
+                              << ec.message().c_str() << std::endl;
                     conn_->stop();
                     conn_.reset();
                 }
@@ -127,11 +130,11 @@ private:
     }
 
 private:
-    io_service_pool					io_service_pool_;
-    boost::asio::ip::tcp::acceptor	acceptor_;
-    std::shared_ptr<connection>		conn_;
-    std::shared_ptr<std::thread>	thread_;
-    std::uint32_t					packet_size_;
+    io_service_pool					    io_service_pool_;
+    boost::asio::ip::tcp::acceptor	    acceptor_;
+    std::shared_ptr<asio_connection>    conn_;
+    std::shared_ptr<std::thread>	    thread_;
+    std::uint32_t					    packet_size_;
 };
 
 } // namespace asio_test

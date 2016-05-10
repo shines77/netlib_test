@@ -22,9 +22,6 @@
     <ClInclude Include="..\..\..\src\asio\asio_echo_serv\io_service_pool.hpp">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\asio\asio_echo_serv\connection.hpp">
-      <Filter>src</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\asio\asio_echo_serv\common.h">
       <Filter>src</Filter>
     </ClInclude>
@@ -35,6 +32,12 @@
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\asio\asio_echo_serv\async_aiso_echo_serv_ex.hpp">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\asio\asio_echo_serv\asio_connection.hpp">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\asio\asio_echo_serv\padding_atomic.hpp">
       <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>
