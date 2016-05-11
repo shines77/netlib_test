@@ -13,11 +13,11 @@
 using namespace boost::asio;
 using namespace asio_test;
 
-std::uint32_t g_mode = mode_pingpong;
+uint32_t g_mode = mode_pingpong;
 std::string   g_mode_str = "pingpong";
 
 void run_pingpong_client(const std::string & app_name, const std::string & ip,
-    const std::string & port, std::uint32_t packet_size)
+    const std::string & port, uint32_t packet_size)
 {
     std::cout << app_name.c_str() << " mode = " << g_mode_str.c_str() << std::endl;
     std::cout << std::endl;
@@ -44,7 +44,7 @@ void run_pingpong_client(const std::string & app_name, const std::string & ip,
 }
 
 void run_qps_client(const std::string & app_name, const std::string & ip,
-    const std::string & port, std::uint32_t packet_size)
+    const std::string & port, uint32_t packet_size)
 {
     std::cout << app_name.c_str() << " mode = " << g_mode_str.c_str() << std::endl;
     std::cout << std::endl;
@@ -71,7 +71,7 @@ void run_qps_client(const std::string & app_name, const std::string & ip,
 }
 
 void run_latency_client(const std::string & app_name, const std::string & ip,
-    const std::string & port, std::uint32_t packet_size)
+    const std::string & port, uint32_t packet_size)
 {
     std::cout << app_name.c_str() << " mode = " << g_mode_str.c_str() << std::endl;
     std::cout << std::endl;
@@ -98,7 +98,7 @@ void run_latency_client(const std::string & app_name, const std::string & ip,
 }
 
 void run_throughout_client(const std::string & app_name, const std::string & ip,
-    const std::string & port, std::uint32_t packet_size)
+    const std::string & port, uint32_t packet_size)
 {
     std::cout << app_name.c_str() << " mode = " << g_mode_str.c_str() << std::endl;
     std::cout << std::endl;

@@ -13,8 +13,12 @@
 
 using namespace boost::system;
 
-#define MAX_PACKET_SIZE	        65536
-#define QUERY_COUNTER_INTERVAL  100
+#define MAX_PACKET_SIZE	            65536
+
+// Whether use atomic update realtime?
+#define USE_ATOMIC_REALTIME_UPDATE  1
+
+#define QUERY_COUNTER_INTERVAL      100
 
 using namespace boost::asio;
 
@@ -26,13 +30,13 @@ private:
     enum { PACKET_SIZE = MAX_PACKET_SIZE };
 
     ip::tcp::socket socket_;
-    std::uint32_t packet_size_;
-    std::uint64_t query_count_;
+    uint32_t packet_size_;
+    uint64_t query_count_;
 
     char data_[PACKET_SIZE];
 
 public:
-    asio_connection(boost::asio::io_service & io_service, std::uint32_t packet_size)
+    asio_connection(boost::asio::io_service & io_service, uint32_t packet_size)
         : socket_(io_service), packet_size_(packet_size), query_count_(0)
     {
         ::memset(data_, 'k', sizeof(data_));
@@ -40,14 +44,17 @@ public:
 
     ~asio_connection()
     {
+#if !defined(_WIN32_WINNT) || (_WIN32_WINNT >= 0x0600)
+        socket_.cancel();
+#endif
+        socket_.shutdown(socket_base::shutdown_both);
         socket_.close();
     }
 
     void start()
     {
         g_client_count++;
-        get_socket_recv_bufsize(socket_);
-        set_socket_recv_bufsize(socket_, 65536);
+        set_socket_recv_bufsize(MAX_PACKET_SIZE);
         do_read();
     }
 
@@ -64,38 +71,37 @@ public:
     }
 
     static boost::shared_ptr<asio_connection> create_new(
-        boost::asio::io_service & io_service, std::uint32_t packet_size) {
+        boost::asio::io_service & io_service, uint32_t packet_size) {
         return boost::shared_ptr<asio_connection>(new asio_connection(io_service, packet_size));
     }
 
 private:
-    int get_socket_recv_bufsize(const ip::tcp::socket & socket) const
+    int get_socket_recv_bufsize() const
     {
         boost::asio::socket_base::receive_buffer_size recv_bufsize_option;
-        socket.get_option(recv_bufsize_option);
+        socket_.get_option(recv_bufsize_option);
 
-        std::cout << "receive_buffer_size: " << recv_bufsize_option.value() << " bytes" << std::endl;
+        //std::cout << "receive_buffer_size: " << recv_bufsize_option.value() << " bytes" << std::endl;
         return recv_bufsize_option.value();
     }
 
-    int set_socket_recv_bufsize(ip::tcp::socket & socket, int buffer_size) const
+    void set_socket_recv_bufsize(int buffer_size)
     {
         boost::asio::socket_base::receive_buffer_size recv_bufsize_option(buffer_size);
-        socket.set_option(recv_bufsize_option);
+        socket_.set_option(recv_bufsize_option);
 
-        std::cout << "set_socket_recv_buffer_size(): " << buffer_size << " bytes" << std::endl;
-        return get_socket_recv_bufsize(socket);
+        //std::cout << "set_socket_recv_buffer_size(): " << buffer_size << " bytes" << std::endl;
     }
 
     void do_read()
     {
         //auto self(this->shared_from_this());
         boost::asio::async_read(socket_, boost::asio::buffer(data_, packet_size_),
-            [this](boost::system::error_code ec, std::size_t bytes_received)
+            [this](boost::system::error_code ec, std::size_t received_bytes)
             {
-                if ((uint32_t)bytes_received != packet_size_) {
-                    std::cout << "asio_connection::do_read(): async_read(), bytes_received = "
-                              << bytes_received << " bytes." << std::endl;
+                if ((uint32_t)received_bytes != packet_size_) {
+                    std::cout << "asio_connection::do_read(): async_read(), received_bytes = "
+                              << received_bytes << " bytes." << std::endl;
                 }
                 if (!ec) {
                     // A successful request, can be used to statistic qps
@@ -118,12 +124,6 @@ private:
             [this](boost::system::error_code ec, std::size_t bytes_written)
             {
                 if (!ec) {
-                    if ((uint32_t)bytes_written != packet_size_) {
-                        std::cout << "asio_connection::do_write(): async_write(), bytes_written = "
-                                  << bytes_written << " bytes." << std::endl;
-                    }
-
-                    do_read();
                     // If get a circle of ping-pong, we count the query one time.
 #if 0
                     g_query_count++;
@@ -134,6 +134,12 @@ private:
                         query_count_ = 0;
                     }
 #endif
+                    if ((uint32_t)bytes_written != packet_size_) {
+                        std::cout << "asio_connection::do_write(): async_write(), bytes_written = "
+                                  << bytes_written << " bytes." << std::endl;
+                    }
+
+                    do_read();
                 }
                 else {
                     // Write error log
@@ -148,11 +154,11 @@ private:
     void do_read_some()
     {
         socket_.async_read_some(boost::asio::buffer(data_, packet_size_),
-            [this](boost::system::error_code ec, std::size_t bytes_received)
+            [this](boost::system::error_code ec, std::size_t received_bytes)
             {
-                if ((uint32_t)bytes_received != packet_size_) {
-                    std::cout << "asio_connection::do_read_some(): async_read(), bytes_received = "
-                              << bytes_received << " bytes." << std::endl;
+                if ((uint32_t)received_bytes != packet_size_) {
+                    std::cout << "asio_connection::do_read_some(): async_read(), received_bytes = "
+                              << received_bytes << " bytes." << std::endl;
                 }
                 if (!ec) {
                     // A successful request, can be used to statistic qps
@@ -204,3 +210,6 @@ private:
 };
 
 } // namespace asio_test
+
+#undef USE_ATOMIC_REALTIME_UPDATE
+#undef QUERY_COUNTER_INTERVAL

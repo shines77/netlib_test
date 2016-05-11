@@ -25,21 +25,31 @@ namespace asio_test {
 class async_asio_echo_serv_ex : public boost::enable_shared_from_this<async_asio_echo_serv_ex>,
                                 private boost::noncopyable
 {
+private:
+    io_service_pool					io_service_pool_;
+    boost::asio::ip::tcp::acceptor	acceptor_;
+    std::shared_ptr<asio_session>	session_;
+    std::shared_ptr<std::thread>	thread_;
+    uint32_t                        buffer_size_;
+    uint32_t					    packet_size_;
+
 public:
     async_asio_echo_serv_ex(const std::string & ip_addr, const std::string & port,
-        std::uint32_t packet_size = 64,
-        std::uint32_t pool_size = std::thread::hardware_concurrency())
+        uint32_t buffer_size = 32768,
+        uint32_t packet_size = 64,
+        uint32_t pool_size = std::thread::hardware_concurrency())
         : io_service_pool_(pool_size), acceptor_(io_service_pool_.get_first_io_service()),
-          packet_size_(packet_size)
+          buffer_size_(buffer_size), packet_size_(packet_size)
     {
         start(ip_addr, port);
     }
 
-    async_asio_echo_serv_ex(short port, std::uint32_t packet_size = 64,
-        std::uint32_t pool_size = std::thread::hardware_concurrency())
+    async_asio_echo_serv_ex(short port, uint32_t buffer_size = 32768,
+        uint32_t packet_size = 64,
+        uint32_t pool_size = std::thread::hardware_concurrency())
         : io_service_pool_(pool_size),
           acceptor_(io_service_pool_.get_first_io_service(), ip::tcp::endpoint(ip::tcp::v4(), port)),
-          packet_size_(packet_size)
+          buffer_size_(buffer_size), packet_size_(packet_size)
     {
         do_accept();
     }
@@ -61,11 +71,12 @@ public:
         if (ec) {
             // Open endpoint error
             std::cout << "async_asio_echo_serv_ex::start() - Error: (code = " << ec.value() << ") "
-                        << ec.message().c_str() << std::endl;
+                      << ec.message().c_str() << std::endl;
             return;
         }
 
-        acceptor_.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
+        boost::asio::socket_base::reuse_address option(true);
+        acceptor_.set_option(option);
         acceptor_.bind(endpoint);
         acceptor_.listen();
 
@@ -111,14 +122,14 @@ private:
 
     void do_accept()
     {
-        asio_session * new_session = new asio_session(io_service_pool_.get_io_service(), packet_size_);
+        asio_session * new_session = new asio_session(io_service_pool_.get_io_service(), buffer_size_, packet_size_);
         acceptor_.async_accept(new_session->socket(), boost::bind(&async_asio_echo_serv_ex::handle_accept,
             this, boost::asio::placeholders::error, new_session));
     }
 
     void do_accept2()
     {
-        session_.reset(new asio_session(io_service_pool_.get_io_service(), packet_size_));
+        session_.reset(new asio_session(io_service_pool_.get_io_service(), buffer_size_, packet_size_));
         acceptor_.async_accept(session_->socket(),
             [this](boost::system::error_code ec)
             {
@@ -136,13 +147,6 @@ private:
                 do_accept2();
             });
     }
-
-private:
-    io_service_pool					io_service_pool_;
-    boost::asio::ip::tcp::acceptor	acceptor_;
-    std::shared_ptr<asio_session>	session_;
-    std::shared_ptr<std::thread>	thread_;
-    std::uint32_t					packet_size_;
 };
 
 } // namespace asio_test

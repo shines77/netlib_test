@@ -14,5 +14,5 @@ enum test_mode_t {
 
 } // namespace asio_test
 
-extern std::uint32_t g_mode;
+extern uint32_t g_mode;
 extern std::string g_mode_str;

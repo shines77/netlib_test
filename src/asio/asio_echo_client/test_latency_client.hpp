@@ -23,7 +23,7 @@ private:
     
     boost::asio::io_service & io_service_;
     ip::tcp::socket socket_;
-    std::uint32_t packet_size_;
+    uint32_t packet_size_;
 
     uint64_t last_query_count_;
     uint64_t total_query_count_;
@@ -39,7 +39,7 @@ private:
 
 public:
     test_latency_client(boost::asio::io_service & io_service,
-        ip::tcp::resolver::iterator endpoint_iterator, std::uint32_t packet_size)
+        ip::tcp::resolver::iterator endpoint_iterator, uint32_t packet_size)
         : io_service_(io_service),
           socket_(io_service), packet_size_(packet_size),
           last_query_count_(0), total_query_count_(0), last_total_latency_(0.0), total_latency_(0.0)

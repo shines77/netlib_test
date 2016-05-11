@@ -27,16 +27,16 @@ class async_asio_echo_serv : public boost::enable_shared_from_this<async_asio_ec
 {
 public:
     async_asio_echo_serv(const std::string & ip_addr, const std::string & port,
-        std::uint32_t packet_size = 64,
-        std::uint32_t pool_size = std::thread::hardware_concurrency())
+        uint32_t packet_size = 64,
+        uint32_t pool_size = std::thread::hardware_concurrency())
         : io_service_pool_(pool_size), acceptor_(io_service_pool_.get_first_io_service()),
           packet_size_(packet_size)
     {
         start(ip_addr, port);
     }
 
-    async_asio_echo_serv(short port, std::uint32_t packet_size = 64,
-        std::uint32_t pool_size = std::thread::hardware_concurrency())
+    async_asio_echo_serv(short port, uint32_t packet_size = 64,
+        uint32_t pool_size = std::thread::hardware_concurrency())
         : io_service_pool_(pool_size),
           acceptor_(io_service_pool_.get_first_io_service(), ip::tcp::endpoint(ip::tcp::v4(), port)),
           packet_size_(packet_size)
@@ -134,7 +134,7 @@ private:
     boost::asio::ip::tcp::acceptor	    acceptor_;
     std::shared_ptr<asio_connection>    conn_;
     std::shared_ptr<std::thread>	    thread_;
-    std::uint32_t					    packet_size_;
+    uint32_t					    packet_size_;
 };
 
 } // namespace asio_test

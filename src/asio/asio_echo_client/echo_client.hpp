@@ -20,12 +20,12 @@ private:
     
     boost::asio::io_service & io_service_;
     ip::tcp::socket socket_;
-    std::uint32_t packet_size_;
+    uint32_t packet_size_;
     char data_[PACKET_SIZE];
 
 public:
     echo_client(boost::asio::io_service & io_service,
-        ip::tcp::resolver::iterator endpoint_iterator, std::uint32_t packet_size)
+        ip::tcp::resolver::iterator endpoint_iterator, uint32_t packet_size)
         : io_service_(io_service),
           socket_(io_service), packet_size_(packet_size)
     {

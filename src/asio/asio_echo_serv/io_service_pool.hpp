@@ -23,11 +23,11 @@ private:
     std::vector<io_work_ptr> workes_;
 
     /// The next io_service to use for a connection.
-    std::atomic<std::uint32_t> next_io_service_;
+    std::atomic<uint32_t> next_io_service_;
 
 public:
     /// Construct the io_service pool.
-    explicit io_service_pool(std::uint32_t pool_size)
+    explicit io_service_pool(uint32_t pool_size)
         : next_io_service_(0)
     {
         if (pool_size == 0)
@@ -35,7 +35,7 @@ public:
 
         // Give all the io_services work to do so that their run() functions will not
         // exit until they are explicitly stopped.
-        for (std::uint32_t i = 0; i < pool_size; ++i) {
+        for (uint32_t i = 0; i < pool_size; ++i) {
             io_service_ptr io_service(new boost::asio::io_service);
             io_work_ptr work(new boost::asio::io_service::work(*io_service));
             io_services_.push_back(io_service);
