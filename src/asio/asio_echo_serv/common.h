@@ -1,7 +1,7 @@
 #pragma once
 
 #include <atomic>
-#include "padding_atomic.hpp"
+#include "common/padding_atomic.hpp"
 
 extern std::atomic<uint64_t> g_query_count_;
 extern std::atomic<uint32_t> g_client_count_;

@@ -9,6 +9,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="src\common">
+      <UniqueIdentifier>{376d82ef-ec14-4b4e-85ba-a6ab913da13d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\asio\asio_echo_client\asio_echo_client.cpp">
@@ -27,6 +30,12 @@
     </ClInclude>
     <ClInclude Include="..\..\..\src\asio\asio_echo_client\test_latency_client.hpp">
       <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\common\cmd_utils.hpp">
+      <Filter>src\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\common\padding_atomic.hpp">
+      <Filter>src\common</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

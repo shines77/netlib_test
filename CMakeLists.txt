@@ -41,6 +41,8 @@ message("----------------------------------")
 message("-------------- Env ---------------")
 message("  CMAKE_SOURCE_DIR: ${CMAKE_SOURCE_DIR}")
 message("  CMAKE_BINARY_DIR: ${CMAKE_BINARY_DIR}")
+message("  PROJECT_SOURCE_DIR: ${PROJECT_SOURCE_DIR}")
+message("  PROJECT_BINARY_DIR: ${PROJECT_BINARY_DIR}")
 message("----------------------------------")
 
 if (NOT MSVC)
@@ -83,11 +85,11 @@ if (UNIX)
 endif()
 
 include_directories(
-    "${PROJECT_BINARY_DIR}/src/asio/asio_echo_serv"
+    "${PROJECT_SOURCE_DIR}/src"
     )
 
 set(SOURCE_FILES
-    src/asio/asio_echo_serv/asio_echo_serv.cpp
+    src/common/padding_atomic.hpp
     )
 
 subdirs(
