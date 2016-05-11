@@ -46,12 +46,13 @@ void run_asio_echo_serv(const std::string & ip, const std::string & port,
 
         uint64_t last_query_count = 0;
         while (true) {
-            auto curr_succeed_count = (uint64_t)g_query_count;
+            auto cur_succeed_count = (uint64_t)g_query_count;
             auto client_count = (uint32_t)g_client_count;
-            std::cout << ip.c_str() << ":" << port.c_str() << " - [" << client_count << "] conn - "
-                      << thread_cnt << " thread - " << packet_size << " B - qps = "
-                      << (curr_succeed_count - last_query_count) << std::endl;
-            last_query_count = curr_succeed_count;
+            std::cout << ip.c_str() << ":" << port.c_str() << " - " << packet_size << " B : "
+                      << thread_cnt << " thread : "
+                      << "[" << client_count << "] conn : qps = "
+                      << (cur_succeed_count - last_query_count) << std::endl;
+            last_query_count = cur_succeed_count;
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         }
 
@@ -79,12 +80,13 @@ void run_asio_echo_serv_ex(const std::string & ip, const std::string & port,
 
         uint64_t last_query_count = 0;
         while (true) {
-            auto curr_succeed_count = (uint64_t)g_query_count;
+            auto cur_succeed_count = (uint64_t)g_query_count;
             auto client_count = (uint32_t)g_client_count;
-            std::cout << ip.c_str() << ":" << port.c_str() << " - [" << client_count << "] conn - "
-                      << thread_cnt << " thread - " << packet_size << " B - qps = "
-                      << (curr_succeed_count - last_query_count) << std::endl;
-            last_query_count = curr_succeed_count;
+            std::cout << ip.c_str() << ":" << port.c_str() << " - " << packet_size << " B : "
+                      << thread_cnt << " thread : "
+                      << "[" << client_count << "] conn : qps = "
+                      << (cur_succeed_count - last_query_count) << std::endl;
+            last_query_count = cur_succeed_count;
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         }
 

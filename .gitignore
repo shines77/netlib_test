@@ -140,7 +140,7 @@ UpgradeLog.htm
 /deps/tbb/
 
 # Ignore tmp and obj folders
-[Bb]in
+#[Bb]in
 [Oo]bj/
 /[Oo]bj/
 /[Gg]en/
@@ -150,7 +150,7 @@ UpgradeLog.htm
 /[Bb]uild/*/
 
 # Ignore bin and build folders
-/[Bb]in/
+#/[Bb]in/
 /[Dd]ebug/
 /[Rr]elease/
 /x86-[Dd]ebug/
@@ -159,7 +159,7 @@ UpgradeLog.htm
 /x64-[Rr]elease/
 !/deps/
 
-[Bb]in
+#[Bb]in
 [Dd]ebug*/
 [Rr]elease*/
 _ReSharper*/

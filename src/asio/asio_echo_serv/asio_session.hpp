@@ -48,7 +48,7 @@ private:
 
 public:
     asio_session(boost::asio::io_service & io_service, uint32_t buffer_size, uint32_t packet_size)
-        : socket_(io_service), buffer_size_(buffer_size_), packet_size_(packet_size),
+        : socket_(io_service), buffer_size_(buffer_size), packet_size_(packet_size),
           query_count_(0),
           recieved_bytes_(0), sent_bytes_(0), recieved_cnt_(0), sent_cnt_(0),
           sent_bytes_remain_(0)
@@ -164,7 +164,7 @@ private:
 
     inline void do_query_counter_some(uint32_t sent_bytes)
     {
-        uint32_t delta_bytes = sent_bytes_remain_ + sent_bytes_;
+        uint32_t delta_bytes = sent_bytes_remain_ + sent_bytes;
         if (delta_bytes >= packet_size_) {
             uint32_t delta_query_count = delta_bytes / packet_size_;
 #if defined(USE_ATOMIC_REALTIME_UPDATE) && (USE_ATOMIC_REALTIME_UPDATE > 0)
@@ -190,7 +190,7 @@ private:
     {
         //auto self(this->shared_from_this());
         boost::asio::async_read(socket_, boost::asio::buffer(data_, packet_size_),
-            [this](boost::system::error_code ec, std::size_t received_bytes)
+            [this](const boost::system::error_code & ec, std::size_t received_bytes)
             {
                 if ((uint32_t)received_bytes != packet_size_) {
                     std::cout << "asio_session::do_read(): async_read(), received_bytes = "
@@ -217,7 +217,7 @@ private:
     {
         //auto self(this->shared_from_this());
         boost::asio::async_write(socket_, boost::asio::buffer(data_, packet_size_),
-            [this](boost::system::error_code ec, std::size_t sent_bytes)
+            [this](const boost::system::error_code & ec, std::size_t sent_bytes)
             {
                 if (!ec) {
                     // Count the sent bytes
@@ -246,7 +246,7 @@ private:
     void do_read_some()
     {
         socket_.async_read_some(boost::asio::buffer(data_, buffer_size_),
-            [this](boost::system::error_code ec, std::size_t received_bytes)
+            [this](const boost::system::error_code & ec, std::size_t received_bytes)
             {
                 if ((uint32_t)received_bytes != buffer_size_) {
                     std::cout << "asio_session::do_read_some(): async_read(), received_bytes = "
@@ -273,7 +273,7 @@ private:
     {
         //auto self(this->shared_from_this());
         socket_.async_write_some(boost::asio::buffer(data_, buffer_size_),
-            [this](boost::system::error_code ec, std::size_t sent_bytes)
+            [this](const boost::system::error_code & ec, std::size_t sent_bytes)
             {
                 if (!ec) {
                     // Count the sent bytes

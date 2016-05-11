@@ -93,11 +93,24 @@ private:
         //std::cout << "set_socket_recv_buffer_size(): " << buffer_size << " bytes" << std::endl;
     }
 
+    inline void do_query_counter()
+    {
+#if defined(USE_ATOMIC_REALTIME_UPDATE) && (USE_ATOMIC_REALTIME_UPDATE > 0)
+        g_query_count.fetch_add(1);
+#else
+        query_count_++;
+        if (query_count_ >= QUERY_COUNTER_INTERVAL) {
+            g_query_count.fetch_add(QUERY_COUNTER_INTERVAL);
+            query_count_ = 0;
+        }
+#endif
+    }
+
     void do_read()
     {
         //auto self(this->shared_from_this());
         boost::asio::async_read(socket_, boost::asio::buffer(data_, packet_size_),
-            [this](boost::system::error_code ec, std::size_t received_bytes)
+            [this](const boost::system::error_code & ec, std::size_t received_bytes)
             {
                 if ((uint32_t)received_bytes != packet_size_) {
                     std::cout << "asio_connection::do_read(): async_read(), received_bytes = "
@@ -121,19 +134,12 @@ private:
     {
         //auto self(this->shared_from_this());
         boost::asio::async_write(socket_, boost::asio::buffer(data_, packet_size_),
-            [this](boost::system::error_code ec, std::size_t bytes_written)
+            [this](const boost::system::error_code & ec, std::size_t bytes_written)
             {
                 if (!ec) {
                     // If get a circle of ping-pong, we count the query one time.
-#if 0
-                    g_query_count++;
-#else
-                    query_count_++;
-                    if (query_count_ >= QUERY_COUNTER_INTERVAL) {
-                        g_query_count.fetch_add(QUERY_COUNTER_INTERVAL);
-                        query_count_ = 0;
-                    }
-#endif
+                    do_query_counter();
+
                     if ((uint32_t)bytes_written != packet_size_) {
                         std::cout << "asio_connection::do_write(): async_write(), bytes_written = "
                                   << bytes_written << " bytes." << std::endl;
@@ -154,7 +160,7 @@ private:
     void do_read_some()
     {
         socket_.async_read_some(boost::asio::buffer(data_, packet_size_),
-            [this](boost::system::error_code ec, std::size_t received_bytes)
+            [this](const boost::system::error_code & ec, std::size_t received_bytes)
             {
                 if ((uint32_t)received_bytes != packet_size_) {
                     std::cout << "asio_connection::do_read_some(): async_read(), received_bytes = "
@@ -178,25 +184,18 @@ private:
     {
         //auto self(this->shared_from_this());
         socket_.async_write_some(boost::asio::buffer(data_, packet_size_),
-            [this](boost::system::error_code ec, std::size_t bytes_written)
+            [this](const boost::system::error_code & ec, std::size_t bytes_written)
             {
                 if (!ec) {
+                    // If get a circle of ping-pong, we count the query one time.
+                    do_query_counter();
+
                     if ((uint32_t)bytes_written != packet_size_) {
                         std::cout << "asio_connection::do_write_some(): async_write(), bytes_written = "
                                   << bytes_written << " bytes." << std::endl;
                     }
 
                     do_read_some();
-                    // If get a circle of ping-pong, we count the query one time.
-#if 0
-                    g_query_count++;
-#else
-                    query_count_++;
-                    if (query_count_ >= QUERY_COUNTER_INTERVAL) {
-                        g_query_count.fetch_add(QUERY_COUNTER_INTERVAL);
-                        query_count_ = 0;
-                    }
-#endif
                 }
                 else {
                     // Write error log
