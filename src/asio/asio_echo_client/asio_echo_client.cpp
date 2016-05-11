@@ -175,14 +175,14 @@ int main(int argc, char * argv[])
 
     ip = argv[1 + has_mode];
     if (!is_valid_ip_v4(ip)) {
-        //ip = "127.0.0.1";
+        // ip address format wrong
         std::cerr << "Error: ip address \"" << argv[1 + has_mode] << "\" format is wrong." << std::endl;
         return 1;
     }
 
     port = argv[2 + has_mode];
     if (!is_socket_port(port)) {
-        //port = "8090";
+        // port is not correct format
         std::cerr << "Error: port [" << argv[2 + has_mode] << "] number must be range in (0, 65535]." << std::endl;
         return 1;
     }

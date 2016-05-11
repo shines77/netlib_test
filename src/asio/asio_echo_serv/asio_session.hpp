@@ -15,9 +15,9 @@ using namespace boost::system;
 #define MAX_PACKET_SIZE	            65536
 
 // Whether use atomic update realtime?
-#define USE_ATOMIC_REALTIME_UPDATE  1
+#define USE_ATOMIC_REALTIME_UPDATE  0
 
-#define QUERY_COUNTER_INTERVAL      100
+#define QUERY_COUNTER_INTERVAL      99
 
 #define MAX_UPDATE_CNT              3
 #define MAX_UPDATE_BYTES            32768
@@ -174,11 +174,9 @@ private:
                 return;
             }
 #else
-            query_count_ += delta_query_count;
-            if (query_count_ >= QUERY_COUNTER_INTERVAL) {
-                g_query_count.fetch_add(QUERY_COUNTER_INTERVAL);
-                query_count_ = 0;
-                sent_bytes_remain_ = delta_bytes - packet_size_ * QUERY_COUNTER_INTERVAL;
+            if (delta_query_count >= QUERY_COUNTER_INTERVAL) {
+                g_query_count.fetch_add(delta_query_count);
+                sent_bytes_remain_ = delta_bytes - packet_size_ * delta_query_count;
                 return;
             }
 #endif
@@ -224,7 +222,7 @@ private:
                     do_send_counter((uint32_t)sent_bytes);
 
                     // If get a circle of ping-pong, we count the query one time.
-                    do_query_counter();
+                    do_query_counter_some((uint32_t)sent_bytes);
 
                     if ((uint32_t)sent_bytes != packet_size_) {
                         std::cout << "asio_session::do_write(): async_write(), sent_bytes = "
@@ -248,16 +246,48 @@ private:
         socket_.async_read_some(boost::asio::buffer(data_, buffer_size_),
             [this](const boost::system::error_code & ec, std::size_t received_bytes)
             {
-                if ((uint32_t)received_bytes != buffer_size_) {
-                    std::cout << "asio_session::do_read_some(): async_read(), received_bytes = "
-                              << received_bytes << " bytes." << std::endl;
+                /*
+                static int cnt = 0, cnt_sm = 0, cnt_big = 0;
+                if ((uint32_t)received_bytes == packet_size_) {
+                    if (cnt_sm == 0) {
+                        if (cnt != 0)
+                            std::cout << buffer_size_ << " - " << cnt_big << std::endl;
+                        std::cout << packet_size_ << " - " << cnt_sm << std::endl;
+                    }
+                    cnt_sm++;
+                    if ((cnt_sm % 2000) == 0) {
+                        std::cout << packet_size_ << " - " << cnt_sm << std::endl;
+                    }
+                    if (cnt_big != 0)
+                        cnt_big = 0;
                 }
+                else {
+                    if (cnt_big == 0) {
+                        if (cnt != 0)
+                            std::cout << packet_size_ << " - " << cnt_sm << std::endl;
+                        std::cout << received_bytes << " - " << cnt_big << std::endl;
+                    }
+                    cnt_big++;
+                    if ((cnt_big % 2000) == 0) {
+                        std::cout << received_bytes << " - " << cnt_big << std::endl;
+                    }
+                    if (cnt_sm != 0)
+                        cnt_sm = 0;
+                }
+                if (cnt < 15) {
+                    if ((uint32_t)received_bytes != buffer_size_) {
+                        std::cout << "asio_session::do_read_some(): async_read(), received_bytes = "
+                                  << received_bytes << " bytes." << std::endl;
+                    }
+                    cnt++;
+                }
+                //*/
                 if (!ec) {
                     // Count the recieved bytes
                     do_recieve_counter((uint32_t)received_bytes);
 
                     // A successful request, can be used to statistic qps
-                    do_write_some();
+                    do_write_some((int32_t)received_bytes);
                 }
                 else {
                     // Write error log
@@ -269,34 +299,72 @@ private:
         );
     }
 
-    void do_write_some()
+    void do_write_some(int32_t total_sent_bytes)
     {
         //auto self(this->shared_from_this());
-        socket_.async_write_some(boost::asio::buffer(data_, buffer_size_),
-            [this](const boost::system::error_code & ec, std::size_t sent_bytes)
-            {
-                if (!ec) {
-                    // Count the sent bytes
-                    do_send_counter((uint32_t)sent_bytes);
+        while (total_sent_bytes > 0) {
+            std::size_t buffer_size;
+            if (total_sent_bytes < PACKET_SIZE)
+                buffer_size = total_sent_bytes;
+            else
+                buffer_size = PACKET_SIZE;
+#if 1
+            // async write one time <= PACKET_SIZE
+            boost::asio::async_write(socket_, boost::asio::buffer(data_, buffer_size),
+                [this, buffer_size](const boost::system::error_code & ec, std::size_t sent_bytes)
+                {
+                    if (!ec) {
+                        // Count the sent bytes
+                        do_send_counter((uint32_t)sent_bytes);
 
-                    // If get a circle of ping-pong, we count the query one time.
-                    do_query_counter_some((uint32_t)sent_bytes);
+                        // If get a circle of ping-pong, we count the query one time.
+                        do_query_counter_some((uint32_t)sent_bytes);
 
-                    if ((uint32_t)sent_bytes != buffer_size_) {
-                        std::cout << "asio_session::do_write_some(): async_write(), sent_bytes = "
-                                  << sent_bytes << " bytes." << std::endl;
+                        if ((uint32_t)sent_bytes != buffer_size) {
+                            std::cout << "asio_session::do_write_some(): async_write(), sent_bytes = "
+                                      << sent_bytes << " bytes." << std::endl;
+                        }
+
+                        do_read_some();
                     }
+                    else {
+                        // Write error log
+                        std::cout << "asio_session::do_write() - Error: (code = " << ec.value() << ") "
+                                  << ec.message().c_str() << std::endl;
+                        stop(true);
+                    }
+                }
+            );
+#else
+            // async write some one time <= PACKET_SIZE
+            socket_.async_write_some(boost::asio::buffer(data_, buffer_size),
+                [this, buffer_size](const boost::system::error_code & ec, std::size_t sent_bytes)
+                {
+                    if (!ec) {
+                        // Count the sent bytes
+                        do_send_counter((uint32_t)sent_bytes);
 
-                    do_read_some();
+                        // If get a circle of ping-pong, we count the query one time.
+                        do_query_counter_some((uint32_t)sent_bytes);
+
+                        if ((uint32_t)sent_bytes != buffer_size) {
+                            std::cout << "asio_session::do_write_some(): async_write(), sent_bytes = "
+                                      << sent_bytes << " bytes." << std::endl;
+                        }
+
+                        do_read_some();
+                    }
+                    else {
+                        // Write error log
+                        std::cout << "asio_session::do_write() - Error: (code = " << ec.value() << ") "
+                                  << ec.message().c_str() << std::endl;
+                        stop(true);
+                    }
                 }
-                else {
-                    // Write error log
-                    std::cout << "asio_session::do_write() - Error: (code = " << ec.value() << ") "
-                              << ec.message().c_str() << std::endl;
-                    stop(true);
-                }
-            }
-        );
+            );
+#endif
+            total_sent_bytes -= PACKET_SIZE;
+        }
     }
 };
 

@@ -16,9 +16,9 @@ using namespace boost::system;
 #define MAX_PACKET_SIZE	            65536
 
 // Whether use atomic update realtime?
-#define USE_ATOMIC_REALTIME_UPDATE  1
+#define USE_ATOMIC_REALTIME_UPDATE  0
 
-#define QUERY_COUNTER_INTERVAL      100
+#define QUERY_COUNTER_INTERVAL      99
 
 using namespace boost::asio;
 
@@ -54,7 +54,7 @@ public:
     void start()
     {
         g_client_count++;
-        set_socket_recv_bufsize(MAX_PACKET_SIZE);
+        //set_socket_recv_bufsize(MAX_PACKET_SIZE);
         do_read();
     }
 

@@ -126,7 +126,13 @@ private:
                     // Have recieved the response message
                     recieve_time_ = high_resolution_clock::now();
                     display_counters();
+
                     do_write();
+                }
+                else {
+                    // Write error log
+                    std::cout << "test_latency_client::do_read() - Error: (code = " << ec.value() << ") "
+                              << ec.message().c_str() << std::endl;
                 }
             });
     }
@@ -146,6 +152,11 @@ private:
                 if (!ec)
                 {
                     do_read();
+                }
+                else {
+                    // Write error log
+                    std::cout << "test_latency_client::do_write() - Error: (code = " << ec.value() << ") "
+                              << ec.message().c_str() << std::endl;
                 }
             });
     }
