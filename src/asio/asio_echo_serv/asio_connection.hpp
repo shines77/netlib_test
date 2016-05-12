@@ -45,7 +45,7 @@ public:
     ~asio_connection()
     {
 #if !defined(_WIN32_WINNT) || (_WIN32_WINNT >= 0x0600)
-        socket_.cancel();
+        //socket_.cancel();
 #endif
         socket_.shutdown(socket_base::shutdown_both);
         socket_.close();
