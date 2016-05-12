@@ -23,7 +23,9 @@ namespace detail {
 template <typename T, bool isArithmetic = false>
 struct is_inheritable : std::integral_constant<bool,
                         std::is_class<T>::value  &&
+#if (defined(__cplusplus) && (__cplusplus >= 201300L)) || (defined(_MSC_VER) && (_MSC_VER >= 1900L))
                         !std::is_final<T>::value &&
+#endif
                         !std::is_volatile<T>::value> {};
 
 } // namespace detail
