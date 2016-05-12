@@ -126,9 +126,11 @@ void run_throughout_client(const std::string & app_name, const std::string & ip,
 
 void print_usage(const std::string & app_name)
 {
-    std::cerr << "Usage: " << app_name.c_str() << " <mode=xxxx> <ip> <port> [<packet_size> = 64]" << std::endl
-              << "       mode:        Client run mode, you can choose pingpong, qps, latency and throughout." << std::endl << std::endl
-              << "       For example: " << app_name.c_str() << " mode=pingpong 192.168.2.154 8090 64" << std::endl;
+    std::cerr << std::endl
+              << "    Usage: " << app_name.c_str() << " <mode=xxxx> <ip> <port> [<packet_size> = 64]" << std::endl
+              << "           mode:        Client run mode, you can choose pingpong, qps, latency and throughout." << std::endl
+              << std::endl
+              << "           For example: " << app_name.c_str() << " mode=pingpong 192.168.2.154 8090 64" << std::endl;
 }
 
 int main(int argc, char * argv[])

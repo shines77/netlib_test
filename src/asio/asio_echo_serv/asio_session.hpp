@@ -73,6 +73,12 @@ public:
     {
         g_client_count++;
         set_socket_recv_bufsize(MAX_PACKET_SIZE);
+
+        static const int nNetSendTimeout = 45 * 1000;    // Send timeout is 60 second.
+        static const int nNetRecvTimeout = 45 * 1000;    // Recieve timeout is 60 second.
+        ::setsockopt(socket_.native_handle(), SOL_SOCKET, SO_SNDTIMEO, (const char *)&nNetSendTimeout, sizeof(nNetSendTimeout));
+        ::setsockopt(socket_.native_handle(), SOL_SOCKET, SO_RCVTIMEO, (const char *)&nNetRecvTimeout, sizeof(nNetRecvTimeout));
+
         do_read_some();
     }
 

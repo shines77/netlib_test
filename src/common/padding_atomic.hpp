@@ -25,7 +25,7 @@ struct is_inheritable : std::integral_constant<bool,
                         std::is_class<T>::value  &&
 #if (defined(__cplusplus) && (__cplusplus >= 201300L)) || (defined(_MSC_VER) && (_MSC_VER >= 1900L))
                         !std::is_final<T>::value &&
-#endif
+#endif // std::is_final<T> only can use in C++ 14.
                         !std::is_volatile<T>::value> {};
 
 } // namespace detail
@@ -50,11 +50,11 @@ padding_data_impl : public T, public base_padding_data
 
     static const std::size_t kCacheLineSize = CacheLineSize;
     static const std::size_t kSizeofData = sizeof(value_type);
-    static const std::size_t kPaddingSize =
+    static const std::size_t kPaddingBytes =
         (kCacheLineSize - kSizeofData) > 0 ? (kCacheLineSize - kSizeofData) : 1;
 
     // Cacheline padding
-    char padding[kPaddingSize];
+    char padding[kPaddingBytes];
 
     padding_data_impl(value_type value) : T(value) {};
     ~padding_data_impl() {};
@@ -68,14 +68,14 @@ struct padding_data_impl<T, CacheLineSize, false> : public base_padding_data
 
     static const std::size_t kCacheLineSize = CacheLineSize;
     static const std::size_t kSizeofData = sizeof(value_type);
-    static const std::size_t kPaddingSize =
+    static const std::size_t kPaddingBytes =
         (kCacheLineSize - kSizeofData) > 0 ? (kCacheLineSize - kSizeofData) : 1;
 
     // T aligned to cacheline size
     alignas(CacheLineSize) value_type data;
 
     // Cacheline padding
-    char padding[kPaddingSize];
+    char padding[kPaddingBytes];
 
     padding_data_impl(value_type value) : data(value) {};
     ~padding_data_impl() {};
@@ -96,11 +96,11 @@ volatile_padding_data_impl : public T, public base_padding_data
 
     static const std::size_t kCacheLineSize = CacheLineSize;
     static const std::size_t kSizeofData = sizeof(value_type);
-    static const std::size_t kPaddingSize =
+    static const std::size_t kPaddingBytes =
         (kCacheLineSize - kSizeofData) > 0 ? (kCacheLineSize - kSizeofData) : 1;
 
     // Cacheline padding
-    char padding[kPaddingSize];
+    char padding[kPaddingBytes];
 
     volatile_padding_data_impl(_T value) : T(value) {};
     ~volatile_padding_data_impl() {};
@@ -114,14 +114,14 @@ struct volatile_padding_data_impl<T, CacheLineSize, false> : public base_padding
 
     static const std::size_t kCacheLineSize = CacheLineSize;
     static const std::size_t kSizeofData = sizeof(value_type);
-    static const std::size_t kPaddingSize =
+    static const std::size_t kPaddingBytes =
         (kCacheLineSize - kSizeofData) > 0 ? (kCacheLineSize - kSizeofData) : 1;
 
     // (volatile T) aligned to cacheline size
     alignas(CacheLineSize) value_type data;
 
     // Cacheline padding
-    char padding[kPaddingSize];
+    char padding[kPaddingBytes];
 
     volatile_padding_data_impl(value_type value) : data(value) {};
     ~volatile_padding_data_impl() {};
@@ -143,11 +143,11 @@ padding_atomic : public std::atomic<typename std::remove_volatile<T>::type>,
 
     static const std::size_t kCacheLineSize = CacheLineSize;
     static const std::size_t kSizeofData = sizeof(value_type);
-    static const std::size_t kPaddingSize =
+    static const std::size_t kPaddingBytes =
         (kCacheLineSize - kSizeofData) > 0 ? (kCacheLineSize - kSizeofData) : 1;
 
     // Cacheline padding
-    char padding[kPaddingSize];
+    char padding[kPaddingBytes];
 
     padding_atomic(_T val) : std::atomic<typename std::remove_volatile<T>::type>(val) {};
     ~padding_atomic() {};
@@ -161,14 +161,14 @@ struct padding_atomic_wrapper : public base_padding_data
 
     static const std::size_t kCacheLineSize = CacheLineSize;
     static const std::size_t kSizeofData = sizeof(value_type);
-    static const std::size_t kPaddingSize =
+    static const std::size_t kPaddingBytes =
         (kCacheLineSize - kSizeofData) > 0 ? (kCacheLineSize - kSizeofData) : 1;
 
     // std::atomic<T> aligned to cacheline size
     alignas(CacheLineSize) value_type data;
 
     // Cacheline padding
-    char padding[kPaddingSize];
+    char padding[kPaddingBytes];
 
     padding_atomic_wrapper(_T value) : data(value) {};
     ~padding_atomic_wrapper() {};
