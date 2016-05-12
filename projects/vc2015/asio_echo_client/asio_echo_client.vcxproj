@@ -165,10 +165,11 @@
     <ClCompile Include="..\..\..\src\asio\asio_echo_client\asio_echo_client.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\src\asio\asio_echo_client\echo_client.hpp" />
+    <ClInclude Include="..\..\..\src\asio\asio_echo_client\test_pingpong_client.hpp" />
     <ClInclude Include="..\..\..\src\asio\asio_echo_client\boost_asio_msvc.h" />
     <ClInclude Include="..\..\..\src\asio\asio_echo_client\common.h" />
     <ClInclude Include="..\..\..\src\asio\asio_echo_client\test_latency_client.hpp" />
+    <ClInclude Include="..\..\..\src\asio\asio_echo_client\test_qps_client.hpp" />
     <ClInclude Include="..\..\..\src\common\cmd_utils.hpp" />
     <ClInclude Include="..\..\..\src\common\padding_atomic.hpp" />
   </ItemGroup>

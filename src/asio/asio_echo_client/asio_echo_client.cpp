@@ -6,8 +6,9 @@
 #include <boost/asio.hpp>
 
 #include "common.h"
-#include "echo_client.hpp"
+#include "test_pingpong_client.hpp"
 #include "test_latency_client.hpp"
+#include "test_qps_client.hpp"
 #include "common/cmd_utils.hpp"
 
 using namespace boost::asio;
@@ -28,7 +29,7 @@ void run_pingpong_client(const std::string & app_name, const std::string & ip,
         ip::tcp::resolver resolver(io_service);
         //auto endpoint_iterator = resolver.resolve( {"192.168.2.154", "8090"} );
         auto endpoint_iterator = resolver.resolve( { ip, port } );
-        echo_client client(io_service, endpoint_iterator, packet_size);
+        test_pingpong_client client(io_service, endpoint_iterator, packet_size);
 
         std::cout << "connectting " << ip.c_str() << ":" << port.c_str() << std::endl;
         std::cout << "packet_size: " << packet_size << std::endl;
@@ -55,7 +56,7 @@ void run_qps_client(const std::string & app_name, const std::string & ip,
         ip::tcp::resolver resolver(io_service);
         //auto endpoint_iterator = resolver.resolve( {"192.168.2.154", "8090"} );
         auto endpoint_iterator = resolver.resolve( { ip, port } );
-        echo_client client(io_service, endpoint_iterator, packet_size);
+        test_qps_client client(io_service, endpoint_iterator, 32768, packet_size);
 
         std::cout << "connectting " << ip.c_str() << ":" << port.c_str() << std::endl;
         std::cout << "packet_size: " << packet_size << std::endl;
@@ -109,7 +110,7 @@ void run_throughout_client(const std::string & app_name, const std::string & ip,
         ip::tcp::resolver resolver(io_service);
         //auto endpoint_iterator = resolver.resolve( {"192.168.2.154", "8090"} );
         auto endpoint_iterator = resolver.resolve( { ip, port } );
-        echo_client client(io_service, endpoint_iterator, packet_size);
+        test_pingpong_client client(io_service, endpoint_iterator, packet_size);
 
         std::cout << "connectting " << ip.c_str() << ":" << port.c_str() << std::endl;
         std::cout << "packet_size: " << packet_size << std::endl;

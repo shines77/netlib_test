@@ -7,13 +7,13 @@
 
 #include "common.h"
 
-#define MAX_PACKET_SIZE	65536
+#define MAX_PACKET_SIZE	    65536
 
 using namespace boost::asio;
 
 namespace asio_test {
 
-class echo_client
+class test_pingpong_client
 {
 private:
     enum { PACKET_SIZE = MAX_PACKET_SIZE };
@@ -24,7 +24,7 @@ private:
     char data_[PACKET_SIZE];
 
 public:
-    echo_client(boost::asio::io_service & io_service,
+    test_pingpong_client(boost::asio::io_service & io_service,
         ip::tcp::resolver::iterator endpoint_iterator, uint32_t packet_size)
         : io_service_(io_service),
           socket_(io_service), packet_size_(packet_size)
@@ -33,7 +33,7 @@ public:
         do_connect(endpoint_iterator);
     }
 
-    ~echo_client()
+    ~test_pingpong_client()
     {
         //
     }
@@ -42,7 +42,7 @@ private:
     void do_connect(ip::tcp::resolver::iterator endpoint_iterator)
     {
         boost::asio::async_connect(socket_, endpoint_iterator,
-            [this](boost::system::error_code ec, ip::tcp::resolver::iterator)
+            [this](const boost::system::error_code & ec, ip::tcp::resolver::iterator)
             {
                 if (!ec)
                 {
@@ -56,7 +56,7 @@ private:
     {
         boost::asio::async_read(socket_,
             boost::asio::buffer(data_, packet_size_),
-            [this](boost::system::error_code ec, std::size_t /*bytes_transferred*/)
+            [this](const boost::system::error_code & ec, std::size_t /*bytes_transferred*/)
             {
                 if (!ec)
                 {
@@ -69,7 +69,7 @@ private:
     {
         boost::asio::async_write(socket_,
             boost::asio::buffer(data_, packet_size_),
-            [this](boost::system::error_code ec, std::size_t /*bytes_transferred*/)
+            [this](const boost::system::error_code & ec, std::size_t /*bytes_transferred*/)
             {
                 if (!ec)
                 {

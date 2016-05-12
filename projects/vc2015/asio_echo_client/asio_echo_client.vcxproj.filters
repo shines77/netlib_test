@@ -25,9 +25,6 @@
     <ClInclude Include="..\..\..\src\asio\asio_echo_client\common.h">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\asio\asio_echo_client\echo_client.hpp">
-      <Filter>src</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\asio\asio_echo_client\test_latency_client.hpp">
       <Filter>src</Filter>
     </ClInclude>
@@ -36,6 +33,12 @@
     </ClInclude>
     <ClInclude Include="..\..\..\src\common\padding_atomic.hpp">
       <Filter>src\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\asio\asio_echo_client\test_pingpong_client.hpp">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\asio\asio_echo_client\test_qps_client.hpp">
+      <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -9,7 +9,7 @@
 
 #include "common.h"
 
-#define MAX_PACKET_SIZE	65536
+#define MAX_PACKET_SIZE	    65536
 
 using namespace boost::asio;
 using namespace std::chrono;
@@ -101,7 +101,7 @@ private:
     void do_connect(ip::tcp::resolver::iterator endpoint_iterator)
     {
         boost::asio::async_connect(socket_, endpoint_iterator,
-            [this](boost::system::error_code ec, ip::tcp::resolver::iterator)
+            [this](const boost::system::error_code & ec, ip::tcp::resolver::iterator)
             {
                 if (!ec)
                 {
@@ -115,7 +115,7 @@ private:
     {
         boost::asio::async_read(socket_,
             boost::asio::buffer(data_, packet_size_),
-            [this](boost::system::error_code ec, std::size_t bytes_transferred)
+            [this](const boost::system::error_code & ec, std::size_t bytes_transferred)
             {
                 if ((uint32_t)bytes_transferred != packet_size_) {
                     std::cout << "test_latency_client::do_read(): async_read(), bytes_transferred = "
@@ -125,6 +125,7 @@ private:
                 {
                     // Have recieved the response message
                     recieve_time_ = high_resolution_clock::now();
+
                     display_counters();
 
                     do_write();
@@ -141,9 +142,10 @@ private:
     {
         // Prepare to send the request message
         send_time_ = high_resolution_clock::now();
+
         boost::asio::async_write(socket_,
             boost::asio::buffer(data_, packet_size_),
-            [this](boost::system::error_code ec, std::size_t bytes_transferred)
+            [this](const boost::system::error_code & ec, std::size_t bytes_transferred)
             {
                 if ((uint32_t)bytes_transferred != packet_size_) {
                     std::cout << "test_latency_client::do_write(): async_write(), bytes_transferred = "

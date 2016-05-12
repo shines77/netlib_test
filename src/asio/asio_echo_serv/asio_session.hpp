@@ -72,12 +72,18 @@ public:
     void start()
     {
         g_client_count++;
+        set_socket_send_bufsize(MAX_PACKET_SIZE);
         set_socket_recv_bufsize(MAX_PACKET_SIZE);
 
         static const int nNetSendTimeout = 45 * 1000;    // Send timeout is 60 second.
         static const int nNetRecvTimeout = 45 * 1000;    // Recieve timeout is 60 second.
         ::setsockopt(socket_.native_handle(), SOL_SOCKET, SO_SNDTIMEO, (const char *)&nNetSendTimeout, sizeof(nNetSendTimeout));
         ::setsockopt(socket_.native_handle(), SOL_SOCKET, SO_RCVTIMEO, (const char *)&nNetRecvTimeout, sizeof(nNetRecvTimeout));
+
+        linger sLinger;
+        sLinger.l_onoff = 1;    // Enable linger
+        sLinger.l_linger = 5;   // After shutdown(), socket send/recv 5 second data yet.
+        ::setsockopt(socket_.native_handle(), SOL_SOCKET, SO_LINGER, (const char *)&sLinger, sizeof(sLinger));
 
         do_read_some();
     }
@@ -100,6 +106,23 @@ public:
     }
 
 private:
+    int get_socket_send_bufsize() const
+    {
+        boost::asio::socket_base::send_buffer_size send_bufsize_option;
+        socket_.get_option(send_bufsize_option);
+
+        //std::cout << "send_buffer_size: " << send_bufsize_option.value() << " bytes" << std::endl;
+        return send_bufsize_option.value();
+    }
+
+    void set_socket_send_bufsize(int buffer_size)
+    {
+        boost::asio::socket_base::receive_buffer_size send_bufsize_option(buffer_size);
+        socket_.set_option(send_bufsize_option);
+
+        //std::cout << "set_socket_send_buffer_size(): " << buffer_size << " bytes" << std::endl;
+    }
+
     int get_socket_recv_bufsize() const
     {
         boost::asio::socket_base::receive_buffer_size recv_bufsize_option;
