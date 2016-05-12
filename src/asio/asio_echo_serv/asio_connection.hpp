@@ -172,7 +172,7 @@ private:
                 }
                 else {
                     // Write error log
-                    std::cout << "asio_connection::do_read() - Error: (code = " << ec.value() << ") "
+                    std::cout << "asio_connection::do_read_some() - Error: (code = " << ec.value() << ") "
                               << ec.message().c_str() << std::endl;
                     stop(true);
                 }
@@ -199,7 +199,7 @@ private:
                 }
                 else {
                     // Write error log
-                    std::cout << "asio_connection::do_write() - Error: (code = " << ec.value() << ") "
+                    std::cout << "asio_connection::do_write_some() - Error: (code = " << ec.value() << ") "
                               << ec.message().c_str() << std::endl;
                     stop(true);
                 }

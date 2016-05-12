@@ -63,9 +63,9 @@ public:
     ~asio_session()
     {
 #if !defined(_WIN32_WINNT) || (_WIN32_WINNT >= 0x0600)
-        socket_.cancel();
+        //socket_.cancel();
 #endif
-        socket_.shutdown(socket_base::shutdown_both);
+        //socket_.shutdown(socket_base::shutdown_both);
         socket_.close();
     }
 
@@ -291,7 +291,7 @@ private:
                 }
                 else {
                     // Write error log
-                    std::cout << "asio_session::do_read() - Error: (code = " << ec.value() << ") "
+                    std::cout << "asio_session::do_read_some() - Error: (code = " << ec.value() << ") "
                               << ec.message().c_str() << std::endl;
                     stop(true);
                 }
@@ -329,7 +329,7 @@ private:
                     }
                     else {
                         // Write error log
-                        std::cout << "asio_session::do_write() - Error: (code = " << ec.value() << ") "
+                        std::cout << "asio_session::do_write_some() - Error: (code = " << ec.value() << ") "
                                   << ec.message().c_str() << std::endl;
                         stop(true);
                     }
