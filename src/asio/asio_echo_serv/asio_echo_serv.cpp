@@ -109,7 +109,7 @@ int main(int argc, char * argv[])
     std::string app_name;
     app_name = get_app_name(argv[0]);
 
-    int has_respond, need_respond = 0;
+    int has_respond;
     if ((argc > 1) && (std::strncmp(argv[1], "response=", sizeof("response=") - 1) == 0))
         has_respond = 1;
     else

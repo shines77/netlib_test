@@ -20,7 +20,7 @@ class test_qps_client
 {
 private:
     enum { PACKET_SIZE = MAX_PACKET_SIZE };
-    enum { kSendRepeatTimes = 50 };
+    enum { kSendRepeatTimes = 20 };
     
     boost::asio::io_service & io_service_;
     ip::tcp::socket socket_;
@@ -325,7 +325,9 @@ private:
                         duration<double> interval_time = duration_cast< duration<double> >(now_time - last_time);
                         double elapsed_time = interval_time.count();
                         std::cout << sent_cnt << ", " << send_bytes_ << ", BandWidth = "
-                                  << (send_bytes_ / (1000.0 * 1000.0) / (double)elapsed_time) << " MB/sec"
+                                  << std::left << std::setw(5)
+                                  << std::setiosflags(std::ios::fixed) << std::setprecision(3)
+                                  << (send_bytes_ / (1000.0 * 1000.0) / (double)elapsed_time) << " MB/Sec"
                                   << std::endl;
                         last_time = high_resolution_clock::now();
                         send_bytes_ = 0;
