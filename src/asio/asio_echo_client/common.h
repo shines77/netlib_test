@@ -8,8 +8,8 @@ enum test_mode_t {
     mode_unknown,
     mode_pingpong,
     mode_qps,
-    mode_latency,
-    mode_throughout
+    mode_throughput,
+    mode_latency
 };
 
 } // namespace asio_test

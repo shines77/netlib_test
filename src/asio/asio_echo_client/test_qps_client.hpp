@@ -20,10 +20,11 @@ class test_qps_client
 {
 private:
     enum { PACKET_SIZE = MAX_PACKET_SIZE };
-    enum { kSendRepeatTimes = 20 };
+    enum { kSendRepeatTimes = 50 };
     
     boost::asio::io_service & io_service_;
     ip::tcp::socket socket_;
+    uint32_t mode_;
     uint32_t buffer_size_;
     uint32_t packet_size_;
 
@@ -37,16 +38,24 @@ private:
     time_point<high_resolution_clock> recieve_time_;
     time_point<high_resolution_clock> last_time_;
 
-    char data_[PACKET_SIZE];
+    uint32_t send_bytes_;
+    uint32_t recieved_bytes_;
+
+    uint32_t sent_cnt_;
+
+    char recv_data_[PACKET_SIZE];
+    char send_data_[PACKET_SIZE];
 
 public:
     test_qps_client(boost::asio::io_service & io_service,
-        ip::tcp::resolver::iterator endpoint_iterator, uint32_t buffer_size, uint32_t packet_size)
+        ip::tcp::resolver::iterator endpoint_iterator, uint32_t mode, uint32_t buffer_size, uint32_t packet_size)
         : io_service_(io_service),
-          socket_(io_service), buffer_size_(buffer_size), packet_size_(packet_size),
-          last_query_count_(0), total_query_count_(0), last_total_latency_(0.0), total_latency_(0.0)
+          socket_(io_service), mode_(mode), buffer_size_(buffer_size), packet_size_(packet_size),
+          last_query_count_(0), total_query_count_(0), last_total_latency_(0.0), total_latency_(0.0),
+          send_bytes_(0), recieved_bytes_(0), sent_cnt_(0)
     {
-        ::memset(data_, 'h', sizeof(data_));
+        ::memset(recv_data_, 'h', sizeof(recv_data_) - 1);
+        ::memset(send_data_, 'k', sizeof(send_data_) - 1);
         last_time_ = high_resolution_clock::now();
 
         do_connect(endpoint_iterator);
@@ -104,8 +113,9 @@ private:
         total_latency_ += elapsed_time_.count();
         time_point<high_resolution_clock> now_time = high_resolution_clock::now();
         duration<double> interval_time = duration_cast< duration<double> >(now_time - last_time_);
+        double elapsed_time = interval_time.count();
         double avg_latency, avg_total_latency;
-        if (interval_time.count() > 1.0) {
+        if (elapsed_time > 1.0) {
             std::cout << "packet_size           = " << std::left << std::setw(8)
                       << packet_size_ << " B,  latency total     = "
                       << last_total_latency_ << " ms" <<  std::endl;
@@ -126,6 +136,10 @@ private:
             std::cout << "average latency total = " << std::left << std::setw(8)
                       << std::setiosflags(std::ios::fixed) << std::setprecision(6)
                       << avg_total_latency << " ms, query count total = " << total_query_count_ << std::endl;
+
+            std::cout << "send bytes: " << send_bytes_ << ", recieved bytes: " << recieved_bytes_
+                      << ", send pkgs: " << (send_bytes_ / packet_size_) << ", recieved pkgs: " << (recieved_bytes_ / packet_size_)
+                      << std::endl;
             std::cout << std::endl;
 
             // Reset the counters
@@ -150,8 +164,14 @@ private:
         sLinger.l_linger = 5;   // After shutdown(), socket send/recv 5 second data yet.
         ::setsockopt(socket_.native_handle(), SOL_SOCKET, SO_LINGER, (const char *)&sLinger, sizeof(sLinger));
 
-        //do_write();
-        do_sync_write(kSendRepeatTimes);
+        if (mode_ == mode_throughput) {
+            //do_sync_write_only();
+            do_async_write_only();
+        }
+        else {
+            //do_write();
+            do_sync_write(kSendRepeatTimes);
+        }
     }
 
     void stop(bool delete_self = false)
@@ -175,7 +195,7 @@ private:
     void do_read()
     {
         boost::asio::async_read(socket_,
-            boost::asio::buffer(data_, packet_size_),
+            boost::asio::buffer(recv_data_, packet_size_),
             [this](const boost::system::error_code & ec, std::size_t recieved_bytes)
             {
                 if ((uint32_t)recieved_bytes != packet_size_) {
@@ -186,6 +206,9 @@ private:
                 {
                     // Have recieved the response message
                     recieve_time_ = high_resolution_clock::now();
+                    if (recieved_bytes > 0)
+                        recieved_bytes_ += (uint32_t)recieved_bytes;
+
                     display_counters();
 
                     do_write();
@@ -200,7 +223,7 @@ private:
 
     void do_read_some()
     {
-        socket_.async_read_some(boost::asio::buffer(data_, buffer_size_),
+        socket_.async_read_some(boost::asio::buffer(recv_data_, buffer_size_),
             [this](const boost::system::error_code & ec, std::size_t recieved_bytes)
             {
                 if ((uint32_t)recieved_bytes != packet_size_) {
@@ -211,6 +234,8 @@ private:
                 {
                     // Have recieved the response message
                     recieve_time_ = high_resolution_clock::now();
+                    if (recieved_bytes > 0)
+                        recieved_bytes_ += (uint32_t)recieved_bytes;
 
                     display_counters();
 
@@ -230,7 +255,7 @@ private:
         send_time_ = high_resolution_clock::now();
 
         boost::asio::async_write(socket_,
-            boost::asio::buffer(data_, packet_size_),
+            boost::asio::buffer(send_data_, packet_size_),
             [this](const boost::system::error_code & ec, std::size_t sent_bytes)
             {
                 if ((uint32_t)sent_bytes != packet_size_) {
@@ -239,6 +264,7 @@ private:
                 }
                 if (!ec)
                 {
+                    send_bytes_ += (uint32_t)sent_bytes;
                     do_read();
                 }
                 else {
@@ -256,19 +282,91 @@ private:
 
         for (int i = 0; i < repeat; ++i) {
             boost::system::error_code ec;
-            std::size_t sent_bytes = socket_.send(boost::asio::buffer(data_, packet_size_), 0, ec);
+            std::size_t sent_bytes = socket_.send(boost::asio::buffer(send_data_, packet_size_), 0, ec);
             if (!ec) {
-                if (sent_bytes > 0) {
-                    //
-                }
+                send_bytes_ += (uint32_t)sent_bytes;
             }
             else {
                 std::cout << "test_qps_client::do_sync_write() - Error: (code = " << ec.value() << ") "
-                            << ec.message().c_str() << std::endl;
+                          << ec.message().c_str() << std::endl;
             }
         }
 
         do_read_some();
+    }
+
+    void do_async_write_only()
+    {
+        // Prepare to send the request message
+        last_time_ = high_resolution_clock::now();
+
+        sent_cnt_ = 0;
+        send_bytes_ = 0;
+
+        do_sync_write_only();
+    }
+
+    void do_sync_write_only()
+    {
+#if 0
+        // Prepare to send the request message
+        time_point<high_resolution_clock> last_time = high_resolution_clock::now();
+
+        static unsigned int sent_cnt = 0;
+        for (;;) {
+            boost::system::error_code ec;
+            std::size_t sent_bytes = socket_.send(boost::asio::buffer(send_data_, packet_size_), 0, ec);
+            if (!ec) {
+                if (sent_bytes > 0) {
+                    sent_cnt++;
+                    send_bytes_ += (uint32_t)sent_bytes;
+                    if ((sent_cnt & 0x7FFF) == 0x7FFF) {
+                        time_point<high_resolution_clock> now_time = high_resolution_clock::now();
+                        duration<double> interval_time = duration_cast< duration<double> >(now_time - last_time);
+                        double elapsed_time = interval_time.count();
+                        std::cout << sent_cnt << ", " << send_bytes_ << ", BandWidth = "
+                                  << (send_bytes_ / (1000.0 * 1000.0) / (double)elapsed_time) << " MB/sec"
+                                  << std::endl;
+                        last_time = high_resolution_clock::now();
+                        send_bytes_ = 0;
+                    }
+                }
+            }
+            else {
+                std::cout << "test_qps_client::do_sync_write_only() - Error: (code = " << ec.value() << ") "
+                          << ec.message().c_str() << std::endl;
+            }
+        }
+#else
+        boost::asio::async_write(socket_, boost::asio::buffer(send_data_, packet_size_),
+            [this](const boost::system::error_code & ec, std::size_t sent_bytes)
+            {
+                if (!ec) {
+                    if (sent_bytes > 0) {
+                        sent_cnt_++;
+                        send_bytes_ += (uint32_t)sent_bytes;
+                        time_point<high_resolution_clock> now_time = high_resolution_clock::now();
+                        duration<double> interval_time = duration_cast< duration<double> >(now_time - last_time_);
+                        double elapsed_time = interval_time.count();
+                        if (elapsed_time > 1.0 ) {                           
+                            std::cout << sent_cnt_ << ", " << send_bytes_ << ", BandWidth = "
+                                      << std::left << std::setw(5)
+                                      << std::setiosflags(std::ios::fixed) << std::setprecision(3)
+                                      << (send_bytes_ / (1000.0 * 1000.0) / (double)elapsed_time) << " MB/Sec"
+                                      << std::endl;
+                            last_time_ = high_resolution_clock::now();
+                            send_bytes_ = 0;
+                        }
+                    }
+
+                    do_sync_write_only();
+                }
+                else {
+                    std::cout << "test_qps_client::do_sync_write_only() - Error: (code = " << ec.value() << ") "
+                                << ec.message().c_str() << std::endl;
+                }
+        });
+#endif
     }
 };
 

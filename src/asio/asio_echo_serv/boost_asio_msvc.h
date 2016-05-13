@@ -2,7 +2,7 @@
 
 #if defined(_WIN32) || defined(WIN32) || defined(OS_WINDOWS) || defined(_WINDOWS)
 #if !defined(_WIN32_WINNT) || (_WIN32_WINNT < 0x0501)
-#define _WIN32_WINNT	0x0501
+#define _WIN32_WINNT	0x0601
 #endif
 #endif
 

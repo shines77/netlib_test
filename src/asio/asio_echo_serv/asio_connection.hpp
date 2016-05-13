@@ -5,6 +5,7 @@
 #include <memory>
 #include <utility>
 #include <atomic>
+#include <boost/smart_ptr.hpp>
 #include <boost/asio.hpp>
 #include <boost/system/error_code.hpp>
 #include <boost/asio/basic_stream_socket.hpp>
@@ -24,7 +25,7 @@ using namespace boost::asio;
 
 namespace asio_test {
 
-class asio_connection : public std::enable_shared_from_this<asio_connection>,
+class asio_connection : public boost::enable_shared_from_this<asio_connection>,
                         private boost::noncopyable {
 private:
     enum { PACKET_SIZE = MAX_PACKET_SIZE };

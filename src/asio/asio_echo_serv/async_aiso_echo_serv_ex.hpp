@@ -122,14 +122,14 @@ private:
 
     void do_accept()
     {
-        asio_session * new_session = new asio_session(io_service_pool_.get_io_service(), buffer_size_, packet_size_);
+        asio_session * new_session = new asio_session(io_service_pool_.get_io_service(), buffer_size_, packet_size_, g_mode);
         acceptor_.async_accept(new_session->socket(), boost::bind(&async_asio_echo_serv_ex::handle_accept,
             this, boost::asio::placeholders::error, new_session));
     }
 
     void do_accept2()
     {
-        session_.reset(new asio_session(io_service_pool_.get_io_service(), buffer_size_, packet_size_));
+        session_.reset(new asio_session(io_service_pool_.get_io_service(), buffer_size_, packet_size_, g_mode));
         acceptor_.async_accept(session_->socket(),
             [this](boost::system::error_code ec)
             {

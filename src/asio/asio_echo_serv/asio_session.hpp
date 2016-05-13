@@ -7,6 +7,7 @@
 #include <atomic>
 #include <boost/asio.hpp>
 #include <boost/system/error_code.hpp>
+#include <boost/smart_ptr.hpp>
 
 #include "common.h"
 
@@ -26,12 +27,13 @@ using namespace boost::asio;
 
 namespace asio_test {
 
-class asio_session : public std::enable_shared_from_this<asio_session>,
+class asio_session : public boost::enable_shared_from_this<asio_session>,
                      private boost::noncopyable {
 private:
     enum { PACKET_SIZE = MAX_PACKET_SIZE };
 
     ip::tcp::socket socket_;
+    uint32_t    mode_;
     uint32_t    buffer_size_;
     uint32_t    packet_size_;
     uint64_t    query_count_;
@@ -43,15 +45,16 @@ private:
     uint32_t    sent_cnt_;
 
     uint32_t    sent_bytes_remain_;
+    uint32_t    recieved_bytes_remain_;
 
     char data_[PACKET_SIZE];
 
 public:
-    asio_session(boost::asio::io_service & io_service, uint32_t buffer_size, uint32_t packet_size)
-        : socket_(io_service), buffer_size_(buffer_size), packet_size_(packet_size),
-          query_count_(0),
-          recieved_bytes_(0), sent_bytes_(0), recieved_cnt_(0), sent_cnt_(0),
-          sent_bytes_remain_(0)
+    asio_session(boost::asio::io_service & io_service, uint32_t buffer_size,
+                 uint32_t packet_size, uint32_t mode = mode_need_respond)
+        : socket_(io_service), mode_(mode), buffer_size_(buffer_size), packet_size_(packet_size),
+          query_count_(0), recieved_bytes_(0), sent_bytes_(0), recieved_cnt_(0), sent_cnt_(0),
+          sent_bytes_remain_(0), recieved_bytes_remain_(0)
     {
         if (buffer_size_ > MAX_PACKET_SIZE)
             buffer_size_ = MAX_PACKET_SIZE;
@@ -102,7 +105,7 @@ public:
 
     static boost::shared_ptr<asio_session> create_new(
         boost::asio::io_service & io_service, uint32_t buffer_size, uint32_t packet_size) {
-        return boost::shared_ptr<asio_session>(new asio_session(io_service, buffer_size, packet_size));
+        return boost::shared_ptr<asio_session>(new asio_session(io_service, buffer_size, packet_size, g_mode));
     }
 
 private:
@@ -191,7 +194,29 @@ private:
 #endif
     }
 
-    inline void do_query_counter_some(uint32_t sent_bytes)
+    inline void do_query_counter_read_some(uint32_t recieved_bytes)
+    {
+        uint32_t delta_bytes = recieved_bytes_remain_ + recieved_bytes;
+        if (delta_bytes >= packet_size_) {
+            uint32_t delta_query_count = delta_bytes / packet_size_;
+#if defined(USE_ATOMIC_REALTIME_UPDATE) && (USE_ATOMIC_REALTIME_UPDATE > 0)
+            if (delta_query_count > 0) {
+                g_query_count.fetch_add(delta_query_count);
+                recieved_bytes_remain_ = delta_bytes - packet_size_ * delta_query_count;
+                return;
+            }
+#else
+            if (delta_query_count >= QUERY_COUNTER_INTERVAL) {
+                g_query_count.fetch_add(delta_query_count);
+                recieved_bytes_remain_ = delta_bytes - packet_size_ * delta_query_count;
+                return;
+            }
+#endif
+        }
+        recieved_bytes_remain_ = delta_bytes;
+    }
+
+    inline void do_query_counter_write_some(uint32_t sent_bytes)
     {
         uint32_t delta_bytes = sent_bytes_remain_ + sent_bytes;
         if (delta_bytes >= packet_size_) {
@@ -251,7 +276,7 @@ private:
                     do_send_counter((uint32_t)sent_bytes);
 
                     // If get a circle of ping-pong, we count the query one time.
-                    do_query_counter_some((uint32_t)sent_bytes);
+                    do_query_counter_write_some((uint32_t)sent_bytes);
 
                     if ((uint32_t)sent_bytes != packet_size_) {
                         std::cout << "asio_session::do_write(): async_write(), sent_bytes = "
@@ -315,8 +340,17 @@ private:
                     // Count the recieved bytes
                     do_recieve_counter((uint32_t)received_bytes);
 
-                    // A successful request, can be used to statistic qps
-                    do_write_some((int32_t)received_bytes);
+                    if (mode_ == mode_no_respond) {
+                        // Counter the recieved qps
+                        do_query_counter_read_some((int32_t)received_bytes);
+
+                        // Needn't respond the request and read dtat again.
+                        do_read_some();
+                    }
+                    else {
+                        // A successful request, can be used to statistic qps
+                        do_write_some((int32_t)received_bytes);
+                    }
                 }
                 else {
                     // Write error log
@@ -347,7 +381,7 @@ private:
                         do_send_counter((uint32_t)sent_bytes);
 
                         // If get a circle of ping-pong, we count the query one time.
-                        do_query_counter_some((uint32_t)sent_bytes);
+                        do_query_counter_write_some((uint32_t)sent_bytes);
 
                         if ((uint32_t)sent_bytes != buffer_size) {
                             std::cout << "asio_session::do_write_some(): async_write(), sent_bytes = "
@@ -374,7 +408,7 @@ private:
                         do_send_counter((uint32_t)sent_bytes);
 
                         // If get a circle of ping-pong, we count the query one time.
-                        do_query_counter_some((uint32_t)sent_bytes);
+                        do_query_counter_write_some((uint32_t)sent_bytes);
 
                         if ((uint32_t)sent_bytes != buffer_size) {
                             std::cout << "asio_session::do_write_some(): async_write(), sent_bytes = "
