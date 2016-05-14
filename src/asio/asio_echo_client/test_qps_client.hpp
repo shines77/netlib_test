@@ -324,10 +324,10 @@ private:
                         time_point<high_resolution_clock> now_time = high_resolution_clock::now();
                         duration<double> interval_time = duration_cast< duration<double> >(now_time - last_time);
                         double elapsed_time = interval_time.count();
-                        std::cout << sent_cnt << ", " << send_bytes_ << ", BandWidth = "
+                        std::cout << "sent_cnt = " << sent_cnt_ << ", send_bytes = " << send_bytes_ << ", BandWidth = "
                                   << std::left << std::setw(5)
                                   << std::setiosflags(std::ios::fixed) << std::setprecision(3)
-                                  << (send_bytes_ / (1000.0 * 1000.0) / (double)elapsed_time) << " MB/Sec"
+                                  << (send_bytes_ / (1000.0 * 1000.0) / (double)elapsed_time) << " MB/s"
                                   << std::endl;
                         last_time = high_resolution_clock::now();
                         send_bytes_ = 0;
@@ -351,10 +351,10 @@ private:
                         duration<double> interval_time = duration_cast< duration<double> >(now_time - last_time_);
                         double elapsed_time = interval_time.count();
                         if (elapsed_time > 1.0 ) {                           
-                            std::cout << sent_cnt_ << ", " << send_bytes_ << ", BandWidth = "
+                            std::cout << "sent_cnt = " << sent_cnt_ << ", send_bytes = " << send_bytes_ << ", BandWidth = "
                                       << std::left << std::setw(5)
                                       << std::setiosflags(std::ios::fixed) << std::setprecision(3)
-                                      << (send_bytes_ / (1000.0 * 1000.0) / (double)elapsed_time) << " MB/Sec"
+                                      << (send_bytes_ / (1000.0 * 1000.0) / (double)elapsed_time) << " MB/s"
                                       << std::endl;
                             last_time_ = high_resolution_clock::now();
                             send_bytes_ = 0;

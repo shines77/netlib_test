@@ -83,7 +83,7 @@ void run_asio_echo_serv_ex(const std::string & ip, const std::string & port,
                       << std::left << std::setw(5)
                       << std::setiosflags(std::ios::fixed) << std::setprecision(3)
                       << ", BandWidth = " << ((qps * packet_size) / (1024.0 * 1024.0))
-                      << " MB/Sec" << std::endl;
+                      << " MB/s" << std::endl;
             last_query_count = cur_succeed_count;
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         }
