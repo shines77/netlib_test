@@ -145,8 +145,9 @@ int main(int argc, char * argv[])
     else
         has_mode = 0;
 
-    if (argc < (3 + has_mode) || (argc > 1
-        && (std::strcmp(argv[1], "-h") == 0 || std::strcmp(argv[1], "--help") == 0))) {
+    if (argc <= (1 + has_mode) || (argc > (1 + has_mode)
+        && (std::strcmp(argv[1 + has_mode], "-h") == 0
+        || std::strcmp(argv[1 + has_mode], "--help") == 0))) {
         print_usage(app_name);
         exit(1);
     }
@@ -176,18 +177,28 @@ int main(int argc, char * argv[])
         }
     }
 
-    ip = argv[1 + has_mode];
-    if (!is_valid_ip_v4(ip)) {
-        // ip address format wrong
-        std::cerr << "Error: ip address \"" << argv[1 + has_mode] << "\" format is wrong." << std::endl;
-        exit(1);
+    if (argc > (1 + has_mode)) {
+        ip = argv[1 + has_mode];
+        if (!is_valid_ip_v4(ip)) {
+            // ip address format wrong
+            std::cerr << "Error: ip address \"" << ip.c_str() << "\" format is wrong." << std::endl;
+            exit(1);
+        }
+    }
+    else {
+        ip = "127.0.0.1";
     }
 
-    port = argv[2 + has_mode];
-    if (!is_socket_port(port)) {
-        // port is not correct format
-        std::cerr << "Error: port [" << argv[2 + has_mode] << "] number must be range in (0, 65535]." << std::endl;
-        exit(1);
+    if (argc > (2 + has_mode)) {
+        port = argv[2 + has_mode];
+        if (!is_socket_port(port)) {
+            // port is not correct format
+            std::cerr << "Error: port [" << port.c_str() << "] number must be range in (0, 65535]." << std::endl;
+            exit(1);
+        }
+    }
+    else {
+        port = "8090";
     }
 
     if (argc > (3 + has_mode))

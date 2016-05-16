@@ -357,6 +357,7 @@ private:
                                       << (send_bytes_ / (1000.0 * 1000.0) / (double)elapsed_time) << " MB/s"
                                       << std::endl;
                             last_time_ = high_resolution_clock::now();
+                            sent_cnt_ = 0;
                             send_bytes_ = 0;
                         }
                     }

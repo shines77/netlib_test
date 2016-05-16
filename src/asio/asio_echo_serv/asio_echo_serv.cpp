@@ -115,7 +115,9 @@ int main(int argc, char * argv[])
     else
         has_respond = 0;
 
-    if (argc < 3) {
+    if (argc <= (1 + has_respond) || (argc > (1 + has_respond)
+        && (std::strcmp(argv[1 + has_respond], "-h") == 0
+        || std::strcmp(argv[1 + has_respond], "--help") == 0))) {
         print_usage(app_name);
         exit(1);
     }
@@ -143,7 +145,7 @@ int main(int argc, char * argv[])
     if (argc > (1 + has_respond)) {
         ip = argv[1 + has_respond];
         if (!is_valid_ip_v4(ip)) {
-            std::cerr << "Error: ip address \"" << argv[1] << "\" format is wrong." << std::endl;
+            std::cerr << "Error: ip address \"" << ip.c_str() << "\" format is wrong." << std::endl;
             exit(1);
         }
     }
@@ -154,7 +156,7 @@ int main(int argc, char * argv[])
     if (argc > (2 + has_respond)) {
         port = argv[2 + has_respond];
         if (!is_socket_port(port)) {
-            std::cerr << "Error: port [" << argv[1] << "] number must be range in (0, 65535]." << std::endl;
+            std::cerr << "Error: port [" << port.c_str() << "] number must be range in (0, 65535]." << std::endl;
             exit(1);
         }
     }
