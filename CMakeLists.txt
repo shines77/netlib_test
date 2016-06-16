@@ -28,9 +28,8 @@ endif()
 find_package (Threads)
 Include_directories(include)
 
-if (CMAKE_BUILD_TYPE)
-else()
-    set(CMAKE_BUILD_TYPE RELEASE)
+if (NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release)
 endif()
 
 message("------------ Options -------------")
@@ -114,5 +113,24 @@ target_link_libraries(asio_echo_serv ${EXTRA_LIBS})
 add_executable(asio_echo_client
     src/asio/asio_echo_client/asio_echo_client.cpp)
 target_link_libraries(asio_echo_client ${EXTRA_LIBS})
+
+#add_custom_command(TARGET asio_echo_serv
+#    POST_BUILD
+#    COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:asio_echo_serv> ${SDK_DIR}
+#    COMMAND ${CMAKE_COMMAND} -E $<$<CONFIG:Release>:copy_if_different> $<$<NOT:$<CONFIG:Release>>:echo> $<TARGET_FILE:asio_echo_serv> ${REMOTE_DIR}
+#    COMMENT "Copy SDK files ..."
+#)
+
+#add_custom_command(TARGET asio_echo_serv
+#    POST_BUILD
+#    COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:asio_echo_serv> ${SDK_DIR}
+#    COMMENT "Copy SDK files ..."
+#)
+
+#add_custom_command(TARGET asio_echo_serv
+#    POST_BUILD
+#    COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:asio_echo_serv> "$<$<CONFIG:Release>:${REMOTE_DIR}>$<$<NOT:$<CONFIG:Release>>:$<TARGET_FILE:asio_echo_serv>>"
+#    COMMENT "Copy update files ..."
+#)
 
 include (InstallRequiredSystemLibraries)
