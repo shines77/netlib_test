@@ -114,6 +114,9 @@ add_executable(asio_echo_client
     src/asio/asio_echo_client/asio_echo_client.cpp)
 target_link_libraries(asio_echo_client ${EXTRA_LIBS})
 
+#
+# See: http://stackoverflow.com/questions/7988297/cmake-to-add-vs2010-project-custom-build-events
+#
 #add_custom_command(TARGET asio_echo_serv
 #    POST_BUILD
 #    COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:asio_echo_serv> ${SDK_DIR}
