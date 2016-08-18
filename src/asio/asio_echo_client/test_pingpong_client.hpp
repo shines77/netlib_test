@@ -7,8 +7,6 @@
 
 #include "common.h"
 
-#define MAX_PACKET_SIZE	    65536
-
 using namespace boost::asio;
 
 namespace asio_test {

@@ -15,11 +15,11 @@
 
 namespace app_opts = boost::program_options;
 
-uint32_t g_test_mode = asio_test::mode_need_echo;
-uint32_t g_test_category = asio_test::mode_need_echo;
+uint32_t g_test_mode        = asio_test::mode_need_echo;
+uint32_t g_test_category    = asio_test::mode_need_echo;
 
-std::string g_test_mode_str = "Need Echo";
-std::string g_test_category_str;
+std::string g_test_mode_str     = "Need Echo";
+std::string g_test_category_str = "";
 std::string g_rpc_topic;
 
 std::string g_server_ip;
@@ -39,8 +39,6 @@ void run_asio_echo_serv(const std::string & ip, const std::string & port,
 {
     try
     {
-        //async_asio_echo_serv server("192.168.2.191", "8090", 64, std::thread::hardware_concurrency());
-        //async_asio_echo_serv server(8090, std::thread::hardware_concurrency());
         async_asio_echo_serv server(ip, port, packet_size, thread_num);
         server.run();
 
@@ -55,10 +53,17 @@ void run_asio_echo_serv(const std::string & ip, const std::string & port,
         while (true) {
             auto cur_succeed_count = (uint64_t)g_query_count;
             auto client_count = (uint32_t)g_client_count;
-            std::cout << ip.c_str() << ":" << port.c_str() << " - " << packet_size << " B : "
-                      << thread_num << " thread : "
-                      << "[" << client_count << "] conn : qps = "
-                      << (cur_succeed_count - last_query_count) << std::endl;
+            auto qps = (cur_succeed_count - last_query_count);
+            std::cout << ip.c_str() << ":" << port.c_str() << " - " << packet_size << " bytes : "
+                      << thread_num << " thread(s) : "
+                      << "[" << client_count << "] conn(s) : "
+                      << "qps = " << std::right << std::setw(8) << qps << ", "
+                      << "BandWidth = "
+                      << std::right << std::setw(8)
+                      << std::setiosflags(std::ios::fixed) << std::setprecision(3)
+                      << ((qps * packet_size) / (1024.0 * 1024.0))
+                      << " MB/s" << std::endl;
+            std::cout << std::right;
             last_query_count = cur_succeed_count;
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         }
@@ -96,7 +101,7 @@ void run_asio_echo_serv_ex(const std::string & ip, const std::string & port,
             std::cout << ip.c_str() << ":" << port.c_str() << " - " << packet_size << " bytes : "
                       << thread_num << " thread(s) : "
                       << "[" << client_count << "] conn(s) : "
-                      << "QPS = " << std::right << std::setw(8) << qps << ", "
+                      << "qps = " << std::right << std::setw(8) << qps << ", "
                       << "BandWidth = "
                       << std::right << std::setw(8)
                       << std::setiosflags(std::ios::fixed) << std::setprecision(3)
@@ -120,11 +125,11 @@ void print_usage(const std::string & app_name, const app_opts::options_descripti
     std::cerr << options_desc << std::endl;
 
     std::cerr << "Usage: " << std::endl
-              << "  " << app_name.c_str() << " --host=<host> --port=<port> [--packet_size=<packet_size>] [--thread-num=<thread_num>]" << std::endl
+              << "  " << app_name.c_str() << " --mode=<mode> --host=<host> --port=<port> [--packet_size=<packet_size>] [--thread-num=<thread_num>]" << std::endl
               << std::endl
               << "For example: " << std::endl
-              << "  " << app_name.c_str() << " --host=127.0.0.1 --port=9000 --packet-size=64 --thread-num=8" << std::endl
-              << "  " << app_name.c_str() << " -s 127.0.0.1 -p 9000 -k 64 -n 8" << std::endl;
+              << "  " << app_name.c_str() << " --mode=qps --host=127.0.0.1 --port=9000 --packet-size=64 --thread-num=8" << std::endl
+              << "  " << app_name.c_str() << " -m qps -s 127.0.0.1 -p 9000 -k 64 -n 8" << std::endl;
 }
 
 int main(int argc, char * argv[])
@@ -132,21 +137,21 @@ int main(int argc, char * argv[])
     std::string app_name, test_category, test_mode, rpc_topic;
     std::string server_ip, server_port;
     std::string mode, test, cmd, cmd_value;
-    uint32_t need_echo = 0, packet_size = 0, thread_num = 0;
+    uint32_t need_echo = 1, packet_size = 0, thread_num = 0;
 
     app_name = get_app_name(argv[0]);
 
     app_opts::options_description desc("Command list");
     desc.add_options()
         ("help,h",                                                                                      "usage info")
+        ("mode,m",          app_opts::value<std::string>(&test_mode)->default_value("qps"),             "test mode = [pingpong, qps, latency, throughput]")
+        //("test,t",          app_opts::value<std::string>(&test_category)->default_value("echo"),        "test category")
         ("host,s",          app_opts::value<std::string>(&server_ip)->default_value("127.0.0.1"),       "server host or ip address")
         ("port,p",          app_opts::value<std::string>(&server_port)->default_value("9000"),          "server port")
         ("packet-size,k",   app_opts::value<uint32_t>(&packet_size)->default_value(64),                 "packet size")
         ("thread-num,n",    app_opts::value<uint32_t>(&thread_num)->default_value(0),                   "thread numbers")
-        ("mode,m",          app_opts::value<std::string>(&test_mode)->default_value("rpc-call"),        "test mode")
-        ("test,t",          app_opts::value<std::string>(&test_category)->default_value("qps"),         "test category")
-        ("topic,r",         app_opts::value<std::string>(&rpc_topic)->default_value("add"),             "rpc call's topic")
-        ("echo,e",          app_opts::value<uint32_t>(&need_echo)->default_value(0),                    "whether the server need echo")
+        //("topic,r",         app_opts::value<std::string>(&rpc_topic)->default_value("add"),             "rpc call's topic")
+        ("echo,e",          app_opts::value<uint32_t>(&need_echo)->default_value(1),                    "whether the server need echo")
         ;
 
     app_opts::variables_map vars_map;
@@ -212,8 +217,10 @@ int main(int argc, char * argv[])
         std::cout << "test category: " << vars_map["test"].as<std::string>().c_str() << std::endl;
     }
 
+    need_echo = 1;
     g_test_mode = mode_need_echo;
     g_test_mode_str = "Need Echo";
+
     if (vars_map.count("echo") > 0) {
         need_echo = vars_map["echo"].as<uint32_t>();
         std::cout << "need_echo: " << vars_map["echo"].as<uint32_t>() << std::endl;
@@ -225,6 +232,9 @@ int main(int argc, char * argv[])
             g_test_mode = mode_need_echo;
             g_test_mode_str = "Need Echo";
         }
+    }
+    else {
+        std::cout << "need_echo: " << need_echo << std::endl;
     }
 
     std::cout << std::endl;
