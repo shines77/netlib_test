@@ -6,14 +6,24 @@
 #include <thread>
 #include <chrono>
 #include <exception>
+#include <boost/program_options.hpp>
 
 #include "common.h"
 #include "async_asio_echo_serv.hpp"
 #include "async_aiso_echo_serv_ex.hpp"
 #include "common/cmd_utils.hpp"
 
-uint32_t    g_mode = asio_test::mode_need_respond;
-std::string g_mode_str = "Need Respond";
+namespace app_opts = boost::program_options;
+
+uint32_t g_test_mode = asio_test::mode_need_echo;
+uint32_t g_test_category = asio_test::mode_need_echo;
+
+std::string g_test_mode_str = "Need Echo";
+std::string g_test_category_str;
+std::string g_rpc_topic;
+
+std::string g_server_ip;
+std::string g_server_port;
 
 asio_test::padding_atomic<uint64_t> asio_test::g_query_count(0);
 asio_test::padding_atomic<uint32_t> asio_test::g_client_count(0);
@@ -24,18 +34,21 @@ asio_test::padding_atomic<uint64_t> asio_test::g_sent_bytes(0);
 using namespace asio_test;
 
 void run_asio_echo_serv(const std::string & ip, const std::string & port,
-                        uint32_t packet_size, uint32_t thread_cnt)
+                        uint32_t packet_size, uint32_t thread_num,
+                        bool confirm = false)
 {
     try
     {
         //async_asio_echo_serv server("192.168.2.191", "8090", 64, std::thread::hardware_concurrency());
         //async_asio_echo_serv server(8090, std::thread::hardware_concurrency());
-        async_asio_echo_serv server(ip, port, packet_size, thread_cnt);
+        async_asio_echo_serv server(ip, port, packet_size, thread_num);
         server.run();
 
         std::cout << "Server has bind and listening ..." << std::endl;
-        //std::cout << "press [enter] key to continue ...";
-        //getchar();
+        if (confirm) {
+            std::cout << "press [enter] key to continue ...";
+            getchar();
+        }
         std::cout << std::endl;
 
         uint64_t last_query_count = 0;
@@ -43,7 +56,7 @@ void run_asio_echo_serv(const std::string & ip, const std::string & port,
             auto cur_succeed_count = (uint64_t)g_query_count;
             auto client_count = (uint32_t)g_client_count;
             std::cout << ip.c_str() << ":" << port.c_str() << " - " << packet_size << " B : "
-                      << thread_cnt << " thread : "
+                      << thread_num << " thread : "
                       << "[" << client_count << "] conn : qps = "
                       << (cur_succeed_count - last_query_count) << std::endl;
             last_query_count = cur_succeed_count;
@@ -59,17 +72,20 @@ void run_asio_echo_serv(const std::string & ip, const std::string & port,
 }
 
 void run_asio_echo_serv_ex(const std::string & ip, const std::string & port,
-                           uint32_t packet_size, uint32_t thread_cnt)
+                           uint32_t packet_size, uint32_t thread_num,
+                           bool confirm = false)
 {
     static const uint32_t kSeesionBufferSize = 32768;
     try
     {
-        async_asio_echo_serv_ex server(ip, port, kSeesionBufferSize, packet_size, thread_cnt);
+        async_asio_echo_serv_ex server(ip, port, kSeesionBufferSize, packet_size, thread_num);
         server.run();
 
         std::cout << "Server has bind and listening ..." << std::endl;
-        //std::cout << "press [enter] key to continue ...";
-        //getchar();
+        if (confirm) {
+            std::cout << "press [enter] key to continue ...";
+            getchar();
+        }
         std::cout << std::endl;
 
         uint64_t last_query_count = 0;
@@ -77,13 +93,16 @@ void run_asio_echo_serv_ex(const std::string & ip, const std::string & port,
             auto cur_succeed_count = (uint64_t)g_query_count;
             auto client_count = (uint32_t)g_client_count;
             auto qps = (cur_succeed_count - last_query_count);
-            std::cout << ip.c_str() << ":" << port.c_str() << " - " << packet_size << " B : "
-                      << thread_cnt << " thread : "
-                      << "[" << client_count << "] conn : qps = " << qps
-                      << std::left << std::setw(5)
+            std::cout << ip.c_str() << ":" << port.c_str() << " - " << packet_size << " bytes : "
+                      << thread_num << " thread(s) : "
+                      << "[" << client_count << "] conn(s) : "
+                      << "QPS = " << std::right << std::setw(8) << qps << ", "
+                      << "BandWidth = "
+                      << std::right << std::setw(8)
                       << std::setiosflags(std::ios::fixed) << std::setprecision(3)
-                      << ", BandWidth = " << ((qps * packet_size) / (1024.0 * 1024.0))
+                      << ((qps * packet_size) / (1024.0 * 1024.0))
                       << " MB/s" << std::endl;
+            std::cout << std::right;
             last_query_count = cur_succeed_count;
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         }
@@ -96,98 +115,128 @@ void run_asio_echo_serv_ex(const std::string & ip, const std::string & port,
     }
 }
 
-void print_usage(const std::string & app_name)
+void print_usage(const std::string & app_name, const app_opts::options_description & options_desc)
 {
-    std::cerr << std::endl
-              << "    Usage: " << app_name.c_str() << " <ip> <port> [<packet_size> = 64] [<thread_cnt> = hw_cpu_cores]" << std::endl
+    std::cerr << options_desc << std::endl;
+
+    std::cerr << "Usage: " << std::endl
+              << "  " << app_name.c_str() << " --host=<host> --port=<port> [--packet_size=<packet_size>] [--thread-num=<thread_num>]" << std::endl
               << std::endl
-              << "       For example: " << app_name.c_str() << " 192.168.2.154 8090 64 8" << std::endl;
+              << "For example: " << std::endl
+              << "  " << app_name.c_str() << " --host=127.0.0.1 --port=9000 --packet-size=64 --thread-num=8" << std::endl
+              << "  " << app_name.c_str() << " -s 127.0.0.1 -p 9000 -k 64 -n 8" << std::endl;
 }
 
 int main(int argc, char * argv[])
 {
-    std::string app_name;
+    std::string app_name, test_category, test_mode, rpc_topic;
+    std::string server_ip, server_port;
+    std::string mode, test, cmd, cmd_value;
+    uint32_t need_echo = 0, packet_size = 0, thread_num = 0;
+
     app_name = get_app_name(argv[0]);
 
-    int has_respond;
-    if ((argc > 1) && (std::strncmp(argv[1], "response=", sizeof("response=") - 1) == 0))
-        has_respond = 1;
-    else
-        has_respond = 0;
+    app_opts::options_description desc("Command list");
+    desc.add_options()
+        ("help,h",                                                                                      "usage info")
+        ("host,s",          app_opts::value<std::string>(&server_ip)->default_value("127.0.0.1"),       "server host or ip address")
+        ("port,p",          app_opts::value<std::string>(&server_port)->default_value("9000"),          "server port")
+        ("packet-size,k",   app_opts::value<uint32_t>(&packet_size)->default_value(64),                 "packet size")
+        ("thread-num,n",    app_opts::value<uint32_t>(&thread_num)->default_value(0),                   "thread numbers")
+        ("mode,m",          app_opts::value<std::string>(&test_mode)->default_value("rpc-call"),        "test mode")
+        ("test,t",          app_opts::value<std::string>(&test_category)->default_value("qps"),         "test category")
+        ("topic,r",         app_opts::value<std::string>(&rpc_topic)->default_value("add"),             "rpc call's topic")
+        ("echo,e",          app_opts::value<uint32_t>(&need_echo)->default_value(0),                    "whether the server need echo")
+        ;
 
-    if (argc <= (1 + has_respond) || (argc > (1 + has_respond)
-        && (std::strcmp(argv[1 + has_respond], "-h") == 0
-        || std::strcmp(argv[1 + has_respond], "--help") == 0))) {
-        print_usage(app_name);
-        exit(1);
+    app_opts::variables_map vars_map;
+    try {
+        app_opts::store(app_opts::parse_command_line(argc, argv, desc), vars_map);
+    }
+    catch (const std::exception & e) {
+        std::cout << "Exception is: " << e.what() << std::endl;
+    }
+    app_opts::notify(vars_map);
+
+    if (vars_map.count("help") > 0) {
+        print_usage(app_name, desc);
+        exit(EXIT_FAILURE);
     }
 
-    std::string ip, port, mode, cmd, cmd_value;
-    uint32_t packet_size = 0, thread_cnt = 0;
-
-    g_mode = mode_need_respond;
-    g_mode_str = "Need Respond";
-    if (has_respond == 1) {
-        cmd = argv[1];
-        bool succeed = get_cmd_value(cmd, '=', mode);
-        if (succeed) {
-            if (mode == "0") {
-                g_mode = mode_no_respond;
-                g_mode_str = "No Respond";
-            }
-            else {
-                g_mode = mode_need_respond;
-                g_mode_str = "Need Respond";
-            }
+    if (vars_map.count("host") > 0) {
+        server_ip = vars_map["host"].as<std::string>();
+        std::cout << "host: " << vars_map["host"].as<std::string>().c_str() << std::endl;
+        if (!is_valid_ip_v4(server_ip)) {
+            std::cerr << "Error: ip address \"" << server_ip.c_str() << "\" format is wrong." << std::endl;
+            exit(EXIT_FAILURE);
         }
     }
 
-    if (argc > (1 + has_respond)) {
-        ip = argv[1 + has_respond];
-        if (!is_valid_ip_v4(ip)) {
-            std::cerr << "Error: ip address \"" << ip.c_str() << "\" format is wrong." << std::endl;
-            exit(1);
+    if (vars_map.count("port") > 0) {
+        server_port = vars_map["port"].as<std::string>();
+        std::cout << "port: " << vars_map["port"].as<std::string>().c_str() << std::endl;
+        if (!is_socket_port(server_port)) {
+            std::cerr << "Error: port [" << server_port.c_str() << "] number must be range in (0, 65535]." << std::endl;
+            exit(EXIT_FAILURE);
         }
     }
-    else {
-        ip = "127.0.0.1";
-    }
 
-    if (argc > (2 + has_respond)) {
-        port = argv[2 + has_respond];
-        if (!is_socket_port(port)) {
-            std::cerr << "Error: port [" << port.c_str() << "] number must be range in (0, 65535]." << std::endl;
-            exit(1);
+    if (vars_map.count("packet-size") > 0) {
+        packet_size = vars_map["packet-size"].as<uint32_t>();
+        std::cout << "packet-size: " << vars_map["packet-size"].as<uint32_t>() << std::endl;
+        if (packet_size <= 0)
+            packet_size = MIN_PACKET_SIZE;
+        if (packet_size > MAX_PACKET_SIZE) {
+            packet_size = MAX_PACKET_SIZE;
+            std::cerr << "Warnning: packet_size = " << packet_size << " can not set to more than "
+                      << MAX_PACKET_SIZE << " bytes [MAX_PACKET_SIZE]." << std::endl;
         }
     }
-    else {
-        port = "8090";
+
+    if (vars_map.count("thread-num") > 0) {
+        thread_num = vars_map["thread-num"].as<uint32_t>();
+        std::cout << "thread-num: " << vars_map["thread-num"].as<uint32_t>() << std::endl;
+        if (thread_num <= 0) {
+            thread_num = std::thread::hardware_concurrency();
+            std::cout << ">>> thread-num: std::thread::hardware_concurrency() = " << thread_num << std::endl;
+        }
     }
 
-    if (argc > (3 + has_respond))
-        packet_size = std::atoi(argv[3 + has_respond]);
-    if (packet_size <= 0)
-        packet_size = 64;
-    if (packet_size > MAX_PACKET_SIZE) {
-        std::cerr << "Warnning: packet_size = " << packet_size << " is more than "
-                  << MAX_PACKET_SIZE << " bytes [MAX_PACKET_SIZE]." << std::endl;
-        packet_size = MAX_PACKET_SIZE;
+    if (vars_map.count("mode") > 0) {
+        mode = vars_map["mode"].as<std::string>();
+        std::cout << "test mode: " << vars_map["mode"].as<std::string>().c_str() << std::endl;
     }
 
-    if (argc > (4 + has_respond))
-        thread_cnt = std::atoi(argv[4 + has_respond]);
-    if (thread_cnt <= 0)
-        thread_cnt = std::thread::hardware_concurrency();
+    if (vars_map.count("test") > 0) {
+        test = vars_map["test"].as<std::string>();
+        std::cout << "test category: " << vars_map["test"].as<std::string>().c_str() << std::endl;
+    }
 
+    g_test_mode = mode_need_echo;
+    g_test_mode_str = "Need Echo";
+    if (vars_map.count("echo") > 0) {
+        need_echo = vars_map["echo"].as<uint32_t>();
+        std::cout << "need_echo: " << vars_map["echo"].as<uint32_t>() << std::endl;
+        if (need_echo == 0) {
+            g_test_mode = mode_dont_need_echo;
+            g_test_mode_str = "Don't Need Echo";
+        }
+        else {
+            g_test_mode = mode_need_echo;
+            g_test_mode_str = "Need Echo";
+        }
+    }
+
+    std::cout << std::endl;
     std::cout << app_name.c_str() << " begin ..." << std::endl;
     std::cout << std::endl;
-    std::cout << "listen " << ip.c_str() << ":" << port.c_str() 
-              << "  mode: " << g_mode_str.c_str() << std::endl;
-    std::cout << "packet_size: " << packet_size << ", thread_cnt: " << thread_cnt << std::endl;
+    std::cout << "listen " << server_ip.c_str() << ":" << server_port.c_str() << std::endl;
+    std::cout << "mode: " << g_test_mode_str.c_str() << std::endl;
+    std::cout << "packet_size: " << packet_size << ", thread_num: " << thread_num << std::endl;
     std::cout << std::endl;
 
-    //run_asio_echo_serv(ip, port, packet_size, thread_cnt);
-    run_asio_echo_serv_ex(ip, port, packet_size, thread_cnt);
+    //run_asio_echo_serv(server_ip, server_port, packet_size, thread_num);
+    run_asio_echo_serv_ex(server_ip, server_port, packet_size, thread_num);
 
 #ifdef _WIN32
     ::system("pause");

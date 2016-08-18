@@ -13,7 +13,8 @@
 
 using namespace boost::system;
 
-#define MAX_PACKET_SIZE	            65536
+#define MIN_PACKET_SIZE             64
+#define MAX_PACKET_SIZE	            (64 * 1024)
 
 // Whether use atomic update realtime?
 #define USE_ATOMIC_REALTIME_UPDATE  0
@@ -51,7 +52,7 @@ private:
 
 public:
     asio_session(boost::asio::io_service & io_service, uint32_t buffer_size,
-                 uint32_t packet_size, uint32_t mode = mode_need_respond)
+                 uint32_t packet_size, uint32_t mode = mode_need_echo)
         : socket_(io_service), mode_(mode), buffer_size_(buffer_size), packet_size_(packet_size),
           query_count_(0), recieved_bytes_(0), sent_bytes_(0), recieved_cnt_(0), sent_cnt_(0),
           sent_bytes_remain_(0), recieved_bytes_remain_(0)
@@ -105,7 +106,7 @@ public:
 
     static boost::shared_ptr<asio_session> create_new(
         boost::asio::io_service & io_service, uint32_t buffer_size, uint32_t packet_size) {
-        return boost::shared_ptr<asio_session>(new asio_session(io_service, buffer_size, packet_size, g_mode));
+        return boost::shared_ptr<asio_session>(new asio_session(io_service, buffer_size, packet_size, g_test_mode));
     }
 
 private:
@@ -340,7 +341,7 @@ private:
                     // Count the recieved bytes
                     do_recieve_counter((uint32_t)received_bytes);
 
-                    if (mode_ == mode_no_respond) {
+                    if (mode_ == mode_dont_need_echo) {
                         // Counter the recieved qps
                         do_query_counter_read_some((int32_t)received_bytes);
 

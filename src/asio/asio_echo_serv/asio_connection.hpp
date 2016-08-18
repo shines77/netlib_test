@@ -14,7 +14,8 @@
 
 using namespace boost::system;
 
-#define MAX_PACKET_SIZE	            65536
+#define MIN_PACKET_SIZE             64
+#define MAX_PACKET_SIZE	            (64 * 1024)
 
 // Whether use atomic update realtime?
 #define USE_ATOMIC_REALTIME_UPDATE  0

@@ -1,16 +1,37 @@
 #pragma once
 
+#include <stdint.h>
 #include <atomic>
 #include "common/padding_atomic.hpp"
 
-extern uint32_t     g_mode;
-extern std::string  g_mode_str;
+extern uint32_t g_test_mode;
+extern uint32_t g_test_category;
+
+extern std::string g_test_mode_str;
+extern std::string g_test_category_str;
+extern std::string g_rpc_topic;
+
+extern std::string g_server_ip;
+extern std::string g_server_port;
 
 namespace asio_test {
 
 enum session_mode_t {
-    mode_need_respond,
-    mode_no_respond
+    mode_need_echo,
+    mode_dont_need_echo
+};
+
+enum test_mode_t {
+    test_mode_rpc_call,
+    test_mode_sub_pub,
+    test_mode_default = -1
+};
+
+enum test_category_t {
+    test_cate_qps,
+    test_cate_throughput,
+    test_cate_async_qps,
+    test_cate_default = -1
 };
 
 extern padding_atomic<uint64_t> g_query_count;
