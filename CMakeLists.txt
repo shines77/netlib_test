@@ -18,7 +18,7 @@ set(Boost_USE_STATIC_LIBS        BoostOption_USE_STATIC_LIBS)      # only find s
 set(Boost_USE_MULTITHREADED      BoostOption_USE_MULTITHREADED)
 set(Boost_USE_STATIC_RUNTIME     BoostOption_USE_STATIC_RUNTIME)
 
-find_package(Boost 1.54 COMPONENTS coroutine context system thread chrono REQUIRED)
+find_package(Boost 1.55 COMPONENTS coroutine context system thread chrono program_options REQUIRED)
 
 if (Boost_FOUND)
     include_directories(${Boost_INCLUDE_DIRS})
@@ -47,7 +47,8 @@ message("----------------------------------")
 if (NOT MSVC)
     add_compile_options("-std=c++11")
     add_compile_options("-Wall")
-    add_compile_options("-Wextra")
+    add_compile_options("-Wno-unused-function")
+    ##add_compile_options("-Wextra")
 endif()
 
 if (WIN32)
