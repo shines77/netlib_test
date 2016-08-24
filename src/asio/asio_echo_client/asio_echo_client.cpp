@@ -126,16 +126,29 @@ void run_latency_client(const std::string & app_name, const std::string & ip,
     std::cout << app_name.c_str() << " done." << std::endl;
 }
 
+void make_align_spaces(const std::string & name, std::string & spaces)
+{
+    size_t len = name.size();
+    spaces = "";
+    for (size_t i = 0; i < len; ++i)
+        spaces += " ";
+}
+
 void print_usage(const std::string & app_name, const app_opts::options_description & options_desc)
 {
+    std::string align_spaces;
+    make_align_spaces(app_name, align_spaces);
+
     std::cerr << std::endl;
     std::cerr << options_desc << std::endl;
 
     std::cerr << "Usage: " << std::endl << std::endl
-              << "  " << app_name.c_str() << " --mode=<mode> --host=<host> --port=<port> --test=pingpong --pipeline=<pipeline> [--packet_size=64] [--thread-num=0]" << std::endl
+              << "  " << app_name.c_str()     << " --mode=<mode> --host=<host> --port=<port> --test=pingpong" << std::endl
+              << "  " << align_spaces.c_str() << " --pipeline=<pipeline> [--packet_size=64] [--thread-num=0]" << std::endl
               << std::endl
               << "For example: " << std::endl << std::endl
-              << "  " << app_name.c_str() << " --mode=qps --host=127.0.0.1 --port=9000 --test=pingpong --pipeline=10 --packet-size=64 --thread-num=8" << std::endl
+              << "  " << app_name.c_str()     << " --mode=qps --host=127.0.0.1 --port=9000 --test=pingpong" << std::endl
+              << "  " << align_spaces.c_str() << " --pipeline=10 --packet-size=64 --thread-num=8" << std::endl
               << std::endl
               << "  " << app_name.c_str() << " -s 127.0.0.1 -p 9000 -m echo -t pingpong -l 10 -k 64 -n 8" << std::endl;
     std::cerr << std::endl;
