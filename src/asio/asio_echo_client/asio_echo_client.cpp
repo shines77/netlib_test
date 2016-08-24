@@ -143,7 +143,7 @@ void print_usage(const std::string & app_name, const app_opts::options_descripti
     std::cerr << options_desc << std::endl;
 
     std::cerr << "Usage: " << std::endl << std::endl
-              << "  " << app_name.c_str()     << " --mode=<mode> --host=<host> --port=<port> --test=pingpong" << std::endl
+              << "  " << app_name.c_str()     << " --host=<host> --port=<port> --mode=<mode> --test=<test>" << std::endl
               << "  " << align_spaces.c_str() << " --pipeline=<pipeline> [--packet_size=64] [--thread-num=0]" << std::endl
               << std::endl
               << "For example: " << std::endl << std::endl
