@@ -23,6 +23,7 @@ enum session_mode_t {
 
 enum test_mode_t {
     test_mode_unknown,
+    test_mode_echo,
     test_mode_rpc_call,
     test_mode_sub_pub,
     test_mode_default = -1
@@ -30,8 +31,10 @@ enum test_mode_t {
 
 enum test_method_t {
     test_method_unknown,
+    test_method_pingpong,
     test_method_qps,
     test_method_throughput,
+    test_method_latency,
     test_method_async_qps,
     test_method_default = -1
 };

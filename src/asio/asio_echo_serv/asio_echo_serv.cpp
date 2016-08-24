@@ -15,11 +15,11 @@
 
 namespace app_opts = boost::program_options;
 
-uint32_t g_test_mode        = asio_test::mode_need_echo;
-uint32_t g_test_method    = asio_test::mode_need_echo;
+uint32_t g_test_mode      = asio_test::test_mode_echo;
+uint32_t g_test_method    = asio_test::test_method_pingpong;
 
 std::string g_test_mode_str     = "Need Echo";
-std::string g_test_method_str = "";
+std::string g_test_method_str   = "";
 std::string g_rpc_topic;
 
 std::string g_server_ip;
@@ -125,10 +125,10 @@ void print_usage(const std::string & app_name, const app_opts::options_descripti
     std::cerr << std::endl;
     std::cerr << options_desc << std::endl;
 
-    std::cerr << "Usage: " << std::endl
-              << "  " << app_name.c_str() << " --host=<host> --port=<port> --mode=<echo> --test=<pingpong> [--pipeline=1] [--packet_size=64] [--thread-num=0]" << std::endl
+    std::cerr << "Usage: " << std::endl << std::endl
+              << "  " << app_name.c_str() << " --host=<host> --port=<port> --mode=<mode> --test=<test> [--pipeline=1] [--packet_size=64] [--thread-num=0]" << std::endl
               << std::endl
-              << "For example: " << std::endl
+              << "For example: " << std::endl << std::endl
               << "  " << app_name.c_str() << " --host=127.0.0.1 --port=9000 --mode=echo --test=pingpong --pipeline=10 --packet-size=64 --thread-num=8" << std::endl
               << std::endl
               << "  " << app_name.c_str() << " -s 127.0.0.1 -p 9000 -m echo -t pingpong -l 10 -k 64 -n 8" << std::endl;
