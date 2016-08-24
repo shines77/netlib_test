@@ -162,7 +162,7 @@ private:
         sLinger.l_linger = 5;   // After shutdown(), socket send/recv 5 second data yet.
         ::setsockopt(socket_.native_handle(), SOL_SOCKET, SO_LINGER, (const char *)&sLinger, sizeof(sLinger));
 
-        if (mode_ == mode_throughput) {
+        if (mode_ == test_method_throughput) {
             //do_sync_write_only();
             do_async_write_only();
         }
