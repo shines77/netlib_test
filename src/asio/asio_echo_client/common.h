@@ -7,10 +7,10 @@
 #define MAX_PACKET_SIZE     (64 * 1024)
 
 extern uint32_t g_test_mode;
-extern uint32_t g_test_category;
+extern uint32_t g_test_method;
 
 extern std::string g_test_mode_str;
-extern std::string g_test_category_str;
+extern std::string g_test_method_str;
 extern std::string g_rpc_topic;
 
 extern std::string g_server_ip;
@@ -19,11 +19,16 @@ extern std::string g_server_port;
 namespace asio_test {
 
 enum test_mode_t {
-    mode_unknown,
-    mode_pingpong,
-    mode_qps,
-    mode_throughput,
-    mode_latency
+    test_mode_unknown,
+    test_mode_echo
+};
+
+enum test_method_t {
+    test_method_unknown,
+    test_method_pingpong,
+    test_method_qps,
+    test_method_throughput,
+    test_method_latency
 };
 
 } // namespace asio_test

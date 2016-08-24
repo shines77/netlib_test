@@ -5,10 +5,10 @@
 #include "common/padding_atomic.hpp"
 
 extern uint32_t g_test_mode;
-extern uint32_t g_test_category;
+extern uint32_t g_test_method;
 
 extern std::string g_test_mode_str;
-extern std::string g_test_category_str;
+extern std::string g_test_method_str;
 extern std::string g_rpc_topic;
 
 extern std::string g_server_ip;
@@ -22,16 +22,18 @@ enum session_mode_t {
 };
 
 enum test_mode_t {
+    test_mode_unknown,
     test_mode_rpc_call,
     test_mode_sub_pub,
     test_mode_default = -1
 };
 
-enum test_category_t {
-    test_cate_qps,
-    test_cate_throughput,
-    test_cate_async_qps,
-    test_cate_default = -1
+enum test_method_t {
+    test_method_unknown,
+    test_method_qps,
+    test_method_throughput,
+    test_method_async_qps,
+    test_method_default = -1
 };
 
 extern padding_atomic<uint64_t> g_query_count;
