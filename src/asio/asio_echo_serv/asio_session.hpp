@@ -21,7 +21,7 @@ using namespace boost::system;
 
 #define QUERY_COUNTER_INTERVAL      99
 
-#define MAX_UPDATE_CNT              3
+#define MAX_UPDATE_CNT              5
 #define MAX_UPDATE_BYTES            32768
 
 using namespace boost::asio;
@@ -34,7 +34,7 @@ private:
     enum { PACKET_SIZE = MAX_PACKET_SIZE };
 
     ip::tcp::socket socket_;
-    uint32_t    mode_;
+    uint32_t    need_echo_;
     uint32_t    buffer_size_;
     uint32_t    packet_size_;
     uint64_t    query_count_;
@@ -52,8 +52,8 @@ private:
 
 public:
     asio_session(boost::asio::io_service & io_service, uint32_t buffer_size,
-                 uint32_t packet_size, uint32_t mode = mode_need_echo)
-        : socket_(io_service), mode_(mode), buffer_size_(buffer_size), packet_size_(packet_size),
+                 uint32_t packet_size, uint32_t need_echo = mode_need_echo)
+        : socket_(io_service), need_echo_(need_echo), buffer_size_(buffer_size), packet_size_(packet_size),
           query_count_(0), recieved_bytes_(0), sent_bytes_(0), recieved_cnt_(0), sent_cnt_(0),
           sent_bytes_remain_(0), recieved_bytes_remain_(0)
     {
@@ -79,10 +79,10 @@ public:
         set_socket_send_bufsize(MAX_PACKET_SIZE);
         set_socket_recv_bufsize(MAX_PACKET_SIZE);
 
-        static const int nNetSendTimeout = 45 * 1000;    // Send timeout is 60 second.
-        static const int nNetRecvTimeout = 45 * 1000;    // Recieve timeout is 60 second.
-        ::setsockopt(socket_.native_handle(), SOL_SOCKET, SO_SNDTIMEO, (const char *)&nNetSendTimeout, sizeof(nNetSendTimeout));
-        ::setsockopt(socket_.native_handle(), SOL_SOCKET, SO_RCVTIMEO, (const char *)&nNetRecvTimeout, sizeof(nNetRecvTimeout));
+        static const int kNetSendTimeout = 45 * 1000;    // Send timeout is 45 seconds.
+        static const int kNetRecvTimeout = 45 * 1000;    // Recieve timeout is 45 seconds.
+        ::setsockopt(socket_.native_handle(), SOL_SOCKET, SO_SNDTIMEO, (const char *)&kNetSendTimeout, sizeof(kNetSendTimeout));
+        ::setsockopt(socket_.native_handle(), SOL_SOCKET, SO_RCVTIMEO, (const char *)&kNetRecvTimeout, sizeof(kNetRecvTimeout));
 
         linger sLinger;
         sLinger.l_onoff = 1;    // Enable linger
@@ -341,15 +341,15 @@ private:
                     // Count the recieved bytes
                     do_recieve_counter((uint32_t)received_bytes);
 
-                    if (mode_ == mode_dont_need_echo) {
+                    if (need_echo_ == mode_dont_need_echo) {
                         // Counter the recieved qps
                         do_query_counter_read_some((int32_t)received_bytes);
 
-                        // Needn't respond the request and read dtat again.
+                        // Needn't respond the request and read data again.
                         do_read_some();
                     }
                     else {
-                        // A successful request, can be used to statistic qps
+                        // A successful request, can be used to statistic qps.
                         do_write_some((int32_t)received_bytes);
                     }
                 }
