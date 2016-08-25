@@ -4,7 +4,7 @@
 #include <atomic>
 #include <type_traits>
 
-#define CACHELINE_SIZE  64
+#define CACHE_LINE_SIZE  64
 
 #pragma pack(push)
 #pragma pack(1)
@@ -81,7 +81,7 @@ struct padding_data_impl<T, CacheLineSize, false> : public base_padding_data
     ~padding_data_impl() {};
 };
 
-template <typename T, std::size_t CacheLineSize = CACHELINE_SIZE>
+template <typename T, std::size_t CacheLineSize = CACHE_LINE_SIZE>
 struct padding_data : public padding_data_impl<
                              T, CacheLineSize, detail::is_inheritable<T>::value> {};
 
@@ -127,13 +127,13 @@ struct volatile_padding_data_impl<T, CacheLineSize, false> : public base_padding
     ~volatile_padding_data_impl() {};
 };
 
-template <typename T, std::size_t CacheLineSize = CACHELINE_SIZE>
+template <typename T, std::size_t CacheLineSize = CACHE_LINE_SIZE>
 struct volatile_padding_data : public volatile_padding_data_impl<
                                       T, CacheLineSize, detail::is_inheritable<T>::value> {};
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
-template <typename T, std::size_t CacheLineSize = CACHELINE_SIZE>
+template <typename T, std::size_t CacheLineSize = CACHE_LINE_SIZE>
 struct alignas(CacheLineSize)
 padding_atomic : public std::atomic<typename std::remove_volatile<T>::type>,
                  public base_padding_data
@@ -153,7 +153,7 @@ padding_atomic : public std::atomic<typename std::remove_volatile<T>::type>,
     ~padding_atomic() {};
 };
 
-template <typename T, std::size_t CacheLineSize = CACHELINE_SIZE>
+template <typename T, std::size_t CacheLineSize = CACHE_LINE_SIZE>
 struct padding_atomic_wrapper : public base_padding_data
 {
     typedef typename std::remove_volatile<T>::type _T;
