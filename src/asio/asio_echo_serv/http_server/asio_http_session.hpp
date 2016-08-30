@@ -473,7 +473,7 @@ private:
                     // If get a circle of ping-pong, we count the query one time.
                     do_query_counter_write_some((uint32_t)send_bytes);
 
-                    if ((uint32_t)send_bytes != g_response_html.size()) {
+                    if ((uint32_t)send_bytes != g_response_html.size() && send_bytes != 0) {
                         std::cout << "asio_http_session::do_write_some(): async_write(), send_bytes = "
                                     << send_bytes << " bytes." << std::endl;
                     }
