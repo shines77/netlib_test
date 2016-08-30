@@ -219,11 +219,10 @@ int main(int argc, char * argv[])
 
     if (vars_map.count("mode") > 0) {
         test_mode = vars_map["mode"].as<std::string>();
-        g_test_mode_str = test_mode;
     }
-    mode = g_test_mode_str;
-    std::cout << "test mode: " << mode.c_str() << std::endl;
-    if (mode == "echo") {
+    g_test_mode_str = test_mode;
+    std::cout << "test mode: " << test_mode.c_str() << std::endl;
+    if (test_mode == "echo") {
         g_test_mode = test_mode_echo;
     }
     else {
@@ -238,20 +237,19 @@ int main(int argc, char * argv[])
 
     if (vars_map.count("test") > 0) {
         test_method = vars_map["test"].as<std::string>();
-        g_test_method_str = test_method;
     }
-    test = g_test_method_str;
-    std::cout << "test mode: " << test.c_str() << std::endl;
-    if (test == "pingpong") {
+    std::cout << "test mode: " << test_method.c_str() << std::endl;
+    g_test_method_str = test_method;
+    if (test_method == "pingpong") {
         g_test_method = test_method_pingpong;
     }
-    else if (test == "qps") {
+    else if (test_method == "qps") {
         g_test_method = test_method_qps;
     }
-    else if (test == "throughput") {
+    else if (test_method == "throughput") {
         g_test_method = test_method_throughput;
     }
-    else if (test == "latency") {
+    else if (test_method == "latency") {
         g_test_method = test_method_latency;
     }
     else {
@@ -301,7 +299,7 @@ int main(int argc, char * argv[])
         std::cout << ">>> test-time: " << test_time << std::endl;
     }
 
-    // need_echo = 1;
+    // need_echo
     if (vars_map.count("echo") > 0) {
         need_echo = vars_map["echo"].as<int32_t>();
     }

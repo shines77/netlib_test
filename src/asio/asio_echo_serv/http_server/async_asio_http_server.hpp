@@ -11,31 +11,39 @@
 #include <boost/asio.hpp>
 #include <boost/asio/error.hpp>
 
-#include "common.h"
-#include "io_service_pool.hpp"
-#include "asio_session.hpp"
+#include "../common.h"
+#include "../io_service_pool.hpp"
+#include "asio_http_session.hpp"
 
 using namespace boost::asio;
 
 namespace asio_test {
 
+static const std::string g_response_html = "HTTP/1.1 200 OK\r\n"
+                                           "Date: Fri, 19 Aug 2016 16:25:26 GMT\r\n"
+                                           "Server: boost-asio\r\n"
+                                           "Content-Type: text/html\r\n"
+                                           "Content-Length: 12\r\n"
+                                           "Connection: Keep-Alive\r\n\r\n"
+                                           "Hello World!";
+
 //
 // See: http://www.boost.org/doc/libs/1_36_0/doc/html/boost_asio/example/echo/async_tcp_echo_server.cpp
 //
-class async_asio_echo_serv_ex : public boost::enable_shared_from_this<async_asio_echo_serv_ex>,
-                                private boost::noncopyable
+class async_asio_http_server : public boost::enable_shared_from_this<async_asio_http_server>,
+                               private boost::noncopyable
 {
 private:
-    io_service_pool					io_service_pool_;
-    boost::asio::ip::tcp::acceptor	acceptor_;
-    std::shared_ptr<asio_session>	session_;
-    std::shared_ptr<std::thread>	thread_;
-    uint32_t                        buffer_size_;
-    uint32_t					    packet_size_;
+    io_service_pool					    io_service_pool_;
+    boost::asio::ip::tcp::acceptor	    acceptor_;
+    std::shared_ptr<asio_http_session>	session_;
+    std::shared_ptr<std::thread>	    thread_;
+    uint32_t                            buffer_size_;
+    uint32_t					        packet_size_;
 
 public:
-    async_asio_echo_serv_ex(const std::string & ip_addr, const std::string & port,
-        uint32_t buffer_size = 32768,
+    async_asio_http_server(const std::string & ip_addr, const std::string & port,
+        uint32_t buffer_size = 65536,
         uint32_t packet_size = 64,
         uint32_t pool_size = std::thread::hardware_concurrency())
         : io_service_pool_(pool_size), acceptor_(io_service_pool_.get_first_io_service()),
@@ -44,7 +52,7 @@ public:
         start(ip_addr, port);
     }
 
-    async_asio_echo_serv_ex(short port, uint32_t buffer_size = 32768,
+    async_asio_http_server(short port, uint32_t buffer_size = 65536,
         uint32_t packet_size = 64,
         uint32_t pool_size = std::thread::hardware_concurrency())
         : io_service_pool_(pool_size),
@@ -54,7 +62,7 @@ public:
         do_accept();
     }
 
-    ~async_asio_echo_serv_ex()
+    ~async_asio_http_server()
     {
         this->stop();
     }
@@ -70,7 +78,7 @@ public:
         acceptor_.open(endpoint.protocol(), ec);
         if (ec) {
             // Open endpoint error
-            std::cout << "async_asio_echo_serv_ex::start() - Error: (code = " << ec.value() << ") "
+            std::cout << "async_asio_http_server::start() - Error: (code = " << ec.value() << ") "
                       << ec.message().c_str() << std::endl;
             return;
         }
@@ -100,7 +108,7 @@ public:
     }
 
 private:
-    void handle_accept(const boost::system::error_code & ec, asio_session * session)
+    void handle_accept(const boost::system::error_code & ec, asio_http_session * session)
     {
         if (!ec) {
             if (session) {
@@ -110,25 +118,25 @@ private:
         }
         else {
             // Accept error
-            std::cout << "async_asio_echo_serv_ex::handle_accept() - Error: (code = " << ec.value() << ") "
+            std::cout << "async_asio_http_server::handle_accept() - Error: (code = " << ec.value() << ") "
                       << ec.message().c_str() << std::endl;
             if (session) {
                 session->stop();
                 delete session;
             }
-        }
+        }        
     }
 
     void do_accept()
     {
-        asio_session * new_session = new asio_session(io_service_pool_.get_io_service(), buffer_size_, packet_size_, g_test_mode);
-        acceptor_.async_accept(new_session->socket(), boost::bind(&async_asio_echo_serv_ex::handle_accept,
+        asio_http_session * new_session = new asio_http_session(io_service_pool_.get_io_service(), buffer_size_, packet_size_, g_test_mode);
+        acceptor_.async_accept(new_session->socket(), boost::bind(&async_asio_http_server::handle_accept,
             this, boost::asio::placeholders::error, new_session));
     }
 
     void do_accept2()
     {
-        session_.reset(new asio_session(io_service_pool_.get_io_service(), buffer_size_, packet_size_, g_test_mode));
+        session_.reset(new asio_http_session(io_service_pool_.get_io_service(), buffer_size_, packet_size_, g_test_mode));
         acceptor_.async_accept(session_->socket(),
             [this](const boost::system::error_code & ec)
             {
@@ -137,7 +145,7 @@ private:
                 }
                 else {
                     // Accept error
-                    std::cout << "async_asio_echo_serv_ex::handle_accept2() - Error: (code = " << ec.value() << ") "
+                    std::cout << "async_asio_http_server::handle_accept2() - Error: (code = " << ec.value() << ") "
                               << ec.message().c_str() << std::endl;
                     session_->stop();
                     session_.reset();

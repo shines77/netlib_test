@@ -12,6 +12,12 @@
     <Filter Include="src\common">
       <UniqueIdentifier>{543e69d0-8c2e-4755-8b68-dc91097df654}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\http_server">
+      <UniqueIdentifier>{2970fc0c-ce0a-43dd-a368-1db47f26f24e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\echo_server">
+      <UniqueIdentifier>{3d39e102-7ea3-4d3a-9b84-a3ea5a50e5ba}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\asio\asio_echo_serv\asio_echo_serv.cpp">
@@ -19,9 +25,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\src\asio\asio_echo_serv\async_asio_echo_serv.hpp">
-      <Filter>src</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\asio\asio_echo_serv\io_service_pool.hpp">
       <Filter>src</Filter>
     </ClInclude>
@@ -29,12 +32,6 @@
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\asio\asio_echo_serv\boost_asio_msvc.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\asio\asio_echo_serv\asio_session.hpp">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\asio\asio_echo_serv\async_aiso_echo_serv_ex.hpp">
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\asio\asio_echo_serv\asio_connection.hpp">
@@ -45,6 +42,21 @@
     </ClInclude>
     <ClInclude Include="..\..\..\src\common\padding_atomic.hpp">
       <Filter>src\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\asio\asio_echo_serv\http_server\asio_http_session.hpp">
+      <Filter>src\http_server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\asio\asio_echo_serv\http_server\async_asio_http_server.hpp">
+      <Filter>src\http_server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\asio\asio_echo_serv\async_asio_echo_serv.hpp">
+      <Filter>src\echo_server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\asio\asio_echo_serv\async_aiso_echo_serv_ex.hpp">
+      <Filter>src\echo_server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\asio\asio_echo_serv\asio_session.hpp">
+      <Filter>src\echo_server</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

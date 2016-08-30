@@ -9,17 +9,19 @@
 #include <boost/program_options.hpp>
 
 #include "common.h"
+#include "common/cmd_utils.hpp"
 #include "async_asio_echo_serv.hpp"
 #include "async_aiso_echo_serv_ex.hpp"
-#include "common/cmd_utils.hpp"
+#include "http_server/async_asio_http_server.hpp"
 
 namespace app_opts = boost::program_options;
 
-uint32_t g_test_mode      = asio_test::test_mode_echo;
+uint32_t g_test_mode      = asio_test::test_mode_echo_server;
 uint32_t g_test_method    = asio_test::test_method_pingpong;
+uint32_t g_need_echo      = 1;
 
-std::string g_test_mode_str     = "Need Echo";
-std::string g_test_method_str   = "";
+std::string g_test_mode_str     = "echo server";
+std::string g_test_method_str   = "pingpong";
 std::string g_rpc_topic;
 
 std::string g_server_ip;
@@ -28,7 +30,7 @@ std::string g_server_port;
 asio_test::padding_atomic<uint64_t> asio_test::g_query_count(0);
 asio_test::padding_atomic<uint32_t> asio_test::g_client_count(0);
 
-asio_test::padding_atomic<uint64_t> asio_test::g_recieved_bytes(0);
+asio_test::padding_atomic<uint64_t> asio_test::g_recv_bytes(0);
 asio_test::padding_atomic<uint64_t> asio_test::g_sent_bytes(0);
 
 using namespace asio_test;
@@ -87,6 +89,50 @@ void run_asio_echo_serv_ex(const std::string & ip, const std::string & port,
         server.run();
 
         std::cout << "Server has bind and listening ..." << std::endl;
+        if (confirm) {
+            std::cout << "press [enter] key to continue ...";
+            getchar();
+        }
+        std::cout << std::endl;
+
+        uint64_t last_query_count = 0;
+        while (true) {
+            auto cur_succeed_count = (uint64_t)g_query_count;
+            auto client_count = (uint32_t)g_client_count;
+            auto qps = (cur_succeed_count - last_query_count);
+            std::cout << ip.c_str() << ":" << port.c_str() << " - " << packet_size << " bytes : "
+                      << thread_num << " thread(s) : "
+                      << "[" << client_count << "] conn(s) : "
+                      << "qps = " << std::right << std::setw(8) << qps << ", "
+                      << "BandWidth = "
+                      << std::right << std::setw(8)
+                      << std::setiosflags(std::ios::fixed) << std::setprecision(3)
+                      << ((qps * packet_size) / (1024.0 * 1024.0))
+                      << " MB/s" << std::endl;
+            std::cout << std::right;
+            last_query_count = cur_succeed_count;
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        }
+
+        server.join();
+    }
+    catch (const std::exception & e)
+    {
+        std::cerr << "Exception: " << e.what() << std::endl;
+    }
+}
+
+void run_asio_http_server(const std::string & ip, const std::string & port,
+                          uint32_t packet_size, uint32_t thread_num,
+                          bool confirm = false)
+{
+    static const uint32_t kSeesionBufferSize = 32768;
+    try
+    {
+        async_asio_http_server server(ip, port, kSeesionBufferSize, packet_size, thread_num);
+        server.run();
+
+        std::cout << "Http Server has bind and listening ..." << std::endl;
         if (confirm) {
             std::cout << "press [enter] key to continue ...";
             getchar();
@@ -208,19 +254,28 @@ int main(int argc, char * argv[])
 
     // mode
     if (vars_map.count("mode") > 0) {
-        mode = vars_map["mode"].as<std::string>();
-        g_test_mode_str = mode;
+        test_mode = vars_map["mode"].as<std::string>();
     }
-    mode = g_test_mode_str;
-    std::cout << "test mode: " << mode.c_str() << std::endl;
+    if (test_mode == "http") {
+        g_test_mode = test_mode_http_server;
+        g_test_mode_str = "http server";
+    }
+    else if (test_mode == "no-echo") {
+        g_test_mode = test_mode_echo_server;
+        g_test_mode_str = "non-echo server";
+    }
+    else {
+        g_test_mode = test_mode_echo_server;
+        g_test_mode_str = "echo server";
+    }
+    std::cout << "test mode: " << test_mode.c_str() << std::endl;
 
     // test
     if (vars_map.count("test") > 0) {
-        test = vars_map["test"].as<std::string>();
-        g_test_method_str = test;
+        test_method = vars_map["test"].as<std::string>();
     }
-    test = g_test_method_str;
-    std::cout << "test method: " << test.c_str() << std::endl;
+    g_test_method_str = test_method;
+    std::cout << "test method: " << test_method.c_str() << std::endl;
 
     // packet-size
     if (vars_map.count("packet-size") > 0) {
@@ -247,21 +302,11 @@ int main(int argc, char * argv[])
 
     // need_echo
     need_echo = 1;
-    g_test_mode = mode_need_echo;
-    g_test_mode_str = "Need Echo";
-
     if (vars_map.count("echo") > 0) {
         need_echo = vars_map["echo"].as<int32_t>();
     }
     std::cout << "need_echo: " << need_echo << std::endl;
-    if (need_echo == 0) {
-        g_test_mode = mode_dont_need_echo;
-        g_test_mode_str = "Don't Need Echo";
-    }
-    else {
-        g_test_mode = mode_need_echo;
-        g_test_mode_str = "Need Echo";
-    }
+    g_need_echo =  need_echo;
 
     // Run the server
     std::cout << std::endl;
@@ -269,11 +314,21 @@ int main(int argc, char * argv[])
     std::cout << std::endl;
     std::cout << "listen " << server_ip.c_str() << ":" << server_port.c_str() << std::endl;
     std::cout << "mode: " << g_test_mode_str.c_str() << std::endl;
+    std::cout << "test: " << g_test_method_str.c_str() << std::endl;
     std::cout << "packet_size: " << packet_size << ", thread_num: " << thread_num << std::endl;
     std::cout << std::endl;
 
-    //run_asio_echo_serv(server_ip, server_port, packet_size, thread_num);
-    run_asio_echo_serv_ex(server_ip, server_port, packet_size, thread_num);
+    if (g_test_mode == test_mode_http_server) {
+        run_asio_http_server(server_ip, server_port, packet_size, thread_num);
+    }
+    else if (g_test_mode == test_mode_no_echo_server) {
+        // TODO:
+        std::cout << "TODO: test_mode_no_echo_server." << std::endl;
+    }
+    else {
+        //run_asio_echo_serv(server_ip, server_port, packet_size, thread_num);
+        run_asio_echo_serv_ex(server_ip, server_port, packet_size, thread_num);
+    }
 
 #ifdef _WIN32
     ::system("pause");

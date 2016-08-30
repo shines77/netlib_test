@@ -6,6 +6,7 @@
 
 extern uint32_t g_test_mode;
 extern uint32_t g_test_method;
+extern uint32_t g_need_echo;
 
 extern std::string g_test_mode_str;
 extern std::string g_test_method_str;
@@ -17,13 +18,15 @@ extern std::string g_server_port;
 namespace asio_test {
 
 enum session_mode_t {
-    mode_need_echo,
-    mode_dont_need_echo
+    mode_no_echo = 0,
+    mode_need_echo = 1
 };
 
 enum test_mode_t {
     test_mode_unknown,
-    test_mode_echo,
+    test_mode_echo_server,
+    test_mode_no_echo_server,
+    test_mode_http_server,
     test_mode_rpc_call,
     test_mode_sub_pub,
     test_mode_default = -1
@@ -42,7 +45,7 @@ enum test_method_t {
 extern padding_atomic<uint64_t> g_query_count;
 extern padding_atomic<uint32_t> g_client_count;
 
-extern padding_atomic<uint64_t> g_recieved_bytes;
+extern padding_atomic<uint64_t> g_recv_bytes;
 extern padding_atomic<uint64_t> g_sent_bytes;
 
 }

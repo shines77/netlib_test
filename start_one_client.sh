@@ -1,9 +1,12 @@
 #!/bin/bash
 
-client_num=$1
-client_num=${client_num:-10}
-
+test_method=$1
 packet_size=$2
+
+test_method=${test_method:-pingpong}
 packet_size=${packet_size:-64}
 
-./asio_echo_client mode=latency 192.168.2.191 8090 $packet_size
+# echo "test_method = $test_method"
+# echo "packet_size = $packet_size"
+
+./asio_echo_client --host=192.168.3.225 --port=8090 --mode=echo --test=$test_method --packet-size=$packet_size &
