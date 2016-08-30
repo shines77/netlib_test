@@ -19,14 +19,6 @@ using namespace boost::asio;
 
 namespace asio_test {
 
-static const std::string g_response_html = "HTTP/1.1 200 OK\r\n"
-                                           "Date: Fri, 19 Aug 2016 16:25:26 GMT\r\n"
-                                           "Server: boost-asio\r\n"
-                                           "Content-Type: text/html\r\n"
-                                           "Content-Length: 12\r\n"
-                                           "Connection: Keep-Alive\r\n\r\n"
-                                           "Hello World!";
-
 //
 // See: http://www.boost.org/doc/libs/1_36_0/doc/html/boost_asio/example/echo/async_tcp_echo_server.cpp
 //
@@ -131,7 +123,7 @@ private:
     {
         asio_http_session * new_session = new asio_http_session(io_service_pool_.get_io_service(), buffer_size_, packet_size_, g_test_mode);
         acceptor_.async_accept(new_session->socket(), boost::bind(&async_asio_http_server::handle_accept,
-            this, boost::asio::placeholders::error, new_session));
+            shared_from_this(), boost::asio::placeholders::error, new_session));
     }
 
     void do_accept2()

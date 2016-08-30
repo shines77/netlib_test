@@ -254,15 +254,15 @@ private:
 
         boost::asio::async_write(socket_,
             boost::asio::buffer(send_data_, packet_size_),
-            [this](const boost::system::error_code & ec, std::size_t sent_bytes)
+            [this](const boost::system::error_code & ec, std::size_t send_bytes)
             {
-                if ((uint32_t)sent_bytes != packet_size_) {
-                    std::cout << "test_qps_client::do_write(): async_write(), sent_bytes = "
-                              << sent_bytes << " bytes." << std::endl;
+                if ((uint32_t)send_bytes != packet_size_) {
+                    std::cout << "test_qps_client::do_write(): async_write(), send_bytes = "
+                              << send_bytes << " bytes." << std::endl;
                 }
                 if (!ec)
                 {
-                    send_bytes_ += (uint32_t)sent_bytes;
+                    send_bytes_ += (uint32_t)send_bytes;
                     do_read();
                 }
                 else {
@@ -280,9 +280,9 @@ private:
 
         for (int i = 0; i < repeat; ++i) {
             boost::system::error_code ec;
-            std::size_t sent_bytes = socket_.send(boost::asio::buffer(send_data_, packet_size_), 0, ec);
+            std::size_t send_bytes = socket_.send(boost::asio::buffer(send_data_, packet_size_), 0, ec);
             if (!ec) {
-                send_bytes_ += (uint32_t)sent_bytes;
+                send_bytes_ += (uint32_t)send_bytes;
             }
             else {
                 std::cout << "test_qps_client::do_sync_write() - Error: (code = " << ec.value() << ") "
@@ -313,11 +313,11 @@ private:
         static unsigned int sent_cnt = 0;
         for (;;) {
             boost::system::error_code ec;
-            std::size_t sent_bytes = socket_.send(boost::asio::buffer(send_data_, packet_size_), 0, ec);
+            std::size_t send_bytes = socket_.send(boost::asio::buffer(send_data_, packet_size_), 0, ec);
             if (!ec) {
-                if (sent_bytes > 0) {
+                if (send_bytes > 0) {
                     sent_cnt++;
-                    send_bytes_ += (uint32_t)sent_bytes;
+                    send_bytes_ += (uint32_t)send_bytes;
                     if ((sent_cnt & 0x7FFF) == 0x7FFF) {
                         time_point<high_resolution_clock> now_time = high_resolution_clock::now();
                         duration<double> interval_time = duration_cast< duration<double> >(now_time - last_time);
@@ -339,12 +339,12 @@ private:
         }
 #else
         boost::asio::async_write(socket_, boost::asio::buffer(send_data_, packet_size_),
-            [this](const boost::system::error_code & ec, std::size_t sent_bytes)
+            [this](const boost::system::error_code & ec, std::size_t send_bytes)
             {
                 if (!ec) {
-                    if (sent_bytes > 0) {
+                    if (send_bytes > 0) {
                         sent_cnt_++;
-                        send_bytes_ += (uint32_t)sent_bytes;
+                        send_bytes_ += (uint32_t)send_bytes;
                         time_point<high_resolution_clock> now_time = high_resolution_clock::now();
                         duration<double> interval_time = duration_cast< duration<double> >(now_time - last_time_);
                         double elapsed_time = interval_time.count();

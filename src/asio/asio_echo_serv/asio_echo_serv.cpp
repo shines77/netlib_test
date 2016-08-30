@@ -31,7 +31,7 @@ asio_test::padding_atomic<uint64_t> asio_test::g_query_count(0);
 asio_test::padding_atomic<uint32_t> asio_test::g_client_count(0);
 
 asio_test::padding_atomic<uint64_t> asio_test::g_recv_bytes(0);
-asio_test::padding_atomic<uint64_t> asio_test::g_sent_bytes(0);
+asio_test::padding_atomic<uint64_t> asio_test::g_send_bytes(0);
 
 using namespace asio_test;
 

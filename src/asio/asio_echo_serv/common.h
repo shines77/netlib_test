@@ -46,6 +46,6 @@ extern padding_atomic<uint64_t> g_query_count;
 extern padding_atomic<uint32_t> g_client_count;
 
 extern padding_atomic<uint64_t> g_recv_bytes;
-extern padding_atomic<uint64_t> g_sent_bytes;
+extern padding_atomic<uint64_t> g_send_bytes;
 
 }

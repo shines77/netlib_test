@@ -105,7 +105,7 @@ private:
     {
         asio_connection * new_conn = new asio_connection(io_service_pool_.get_io_service(), packet_size_);
         acceptor_.async_accept(new_conn->socket(), boost::bind(&async_asio_echo_serv::handle_accept,
-            this, boost::asio::placeholders::error, new_conn));
+            shared_from_this(), boost::asio::placeholders::error, new_conn));
     }
 
     void do_accept2()
