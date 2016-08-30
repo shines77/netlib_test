@@ -123,7 +123,7 @@ private:
     {
         asio_http_session * new_session = new asio_http_session(io_service_pool_.get_io_service(), buffer_size_, packet_size_, g_test_mode);
         acceptor_.async_accept(new_session->socket(), boost::bind(&async_asio_http_server::handle_accept,
-            shared_from_this(), boost::asio::placeholders::error, new_session));
+            this, boost::asio::placeholders::error, new_session));
     }
 
     void do_accept2()
