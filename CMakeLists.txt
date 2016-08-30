@@ -48,6 +48,8 @@ if (NOT MSVC)
     add_compile_options("-std=c++11")
     add_compile_options("-Wall")
     add_compile_options("-Wno-unused-function")
+    add_compile_options("-Wno-deprecated-declarations")
+    add_compile_options("-Wno-unused-variable")
     ##add_compile_options("-Wextra")
 endif()
 
