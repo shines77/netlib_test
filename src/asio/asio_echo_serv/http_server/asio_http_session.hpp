@@ -9,7 +9,7 @@
 #include <boost/system/error_code.hpp>
 #include <boost/smart_ptr.hpp>
 
-#include "common.h"
+#include "../common.h"
 
 using namespace boost::system;
 
