@@ -135,7 +135,7 @@ public:
 
     bool parse(char *& parsed) {
         char * cur = parsed_;
-        while (cur < (front_ - 4)) {
+        while (cur <= (front_ - 4)) {
             if (cur[0] == '\r' && cur[1] == '\n'
                 && cur[2] == '\r' && cur[3] == '\n') {
                 parsed = (cur + 4);
