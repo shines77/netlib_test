@@ -461,7 +461,11 @@ private:
                         buffer_.parse_to(scanned);
 
                         // A successful http request, can be used to statistic qps.
+#if 1
+                        do_write_http_response_some();
+#else
                         do_write_http_response();
+#endif
                     }
                     else {
                         do_read_some();
@@ -469,9 +473,11 @@ private:
                 }
                 else {
                     // Write error log
+#if 0
                     std::cout << "asio_http_session::do_read_some() - Error: (recv_bytes = " << recv_bytes
                               << ", code = " << ec.value() << ") "
                               << ec.message().c_str() << std::endl;
+#endif
                     stop(true);
                 }
             }
@@ -479,10 +485,51 @@ private:
     }
 
     void do_write_http_response() {
+        static bool is_first_read = true;
         boost::asio::async_write(socket_, boost::asio::buffer(g_response_html.c_str(), g_response_html.size()),
             [this](const boost::system::error_code & ec, std::size_t send_bytes)
             {
                 if (!ec) {
+                    if (is_first_read) {
+                        std::cout << "g_response_html.size() = " << g_response_html.size() << std::endl;
+                        is_first_read = false;
+                    }
+                    // Count the sent bytes
+                    do_send_counter((uint32_t)send_bytes);
+
+                    // If get a circle of ping-pong, we count the query one time.
+                    do_query_counter_write_some((uint32_t)send_bytes);
+
+                    if ((uint32_t)send_bytes != g_response_html.size() && send_bytes != 0) {
+                        std::cout << "asio_http_session::do_write_some(): async_write(), send_bytes = "
+                                  << send_bytes << " bytes." << std::endl;
+                    }
+
+                    do_read_some();
+                }
+                else {
+                    // Write error log
+                    std::cout << "asio_http_session::do_write_some() - Error: (send_bytes = " << send_bytes
+                              << ", code = " << ec.value() << ") "
+                              << ec.message().c_str() << std::endl;
+                    stop(true);
+                }
+            }
+        );
+
+        do_read_some();
+    }
+
+    void do_write_http_response_some() {
+        static bool is_first_read = true;
+        socket_.async_write_some(boost::asio::buffer(g_response_html.c_str(), g_response_html.size()),
+            [this](const boost::system::error_code & ec, std::size_t send_bytes)
+            {
+                if (!ec) {
+                    if (is_first_read) {
+                        std::cout << "g_response_html.size() = " << g_response_html.size() << std::endl;
+                        is_first_read = false;
+                    }
                     // Count the sent bytes
                     do_send_counter((uint32_t)send_bytes);
 
