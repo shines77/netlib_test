@@ -16,12 +16,13 @@
 
 namespace app_opts = boost::program_options;
 
-uint32_t g_test_mode      = asio_test::test_mode_echo_server;
-uint32_t g_test_method    = asio_test::test_method_pingpong;
-uint32_t g_need_echo      = 1;
+uint32_t g_test_mode    = asio_test::test_mode_echo_server;
+uint32_t g_test_method  = asio_test::test_method_pingpong;
+uint32_t g_need_echo    = 1;
 
-std::string g_test_mode_str     = "echo server";
-std::string g_test_method_str   = "pingpong";
+std::string g_test_mode_str      = "echo";
+std::string g_test_method_str    = "pingpong";
+std::string g_test_mode_full_str = "echo server";
 std::string g_rpc_topic;
 
 std::string g_server_ip;
@@ -57,11 +58,11 @@ void run_asio_echo_serv(const std::string & ip, const std::string & port,
             auto client_count = (uint32_t)g_client_count;
             auto qps = (cur_succeed_count - last_query_count);
             std::cout << ip.c_str() << ":" << port.c_str() << " - " << packet_size << " bytes : "
-                      << thread_num << " thread(s) : "
-                      << "[" << client_count << "] conn(s) : "
-                      << "qps = " << std::right << std::setw(8) << qps << ", "
+                      << thread_num << " threads : "
+                      << "[" << std::left << std::setw(4) << client_count << "] conns : "
+                      << "qps = " << std::right << std::setw(7) << qps << ", "
                       << "BandWidth = "
-                      << std::right << std::setw(8)
+                      << std::right << std::setw(7)
                       << std::setiosflags(std::ios::fixed) << std::setprecision(3)
                       << ((qps * packet_size) / (1024.0 * 1024.0))
                       << " MB/s" << std::endl;
@@ -101,13 +102,13 @@ void run_asio_echo_serv_ex(const std::string & ip, const std::string & port,
             auto client_count = (uint32_t)g_client_count;
             auto qps = (cur_succeed_count - last_query_count);
             std::cout << ip.c_str() << ":" << port.c_str() << " - " << packet_size << " bytes : "
-                      << thread_num << " thread(s) : "
-                      << "[" << client_count << "] conn(s) : "
+                      << thread_num << " threads : "
+                      << "[" << std::left << std::setw(4) << client_count << "] conns : "
                       << "mode = " << g_test_mode_str.c_str() << ", "
                       << "test = " << g_test_method_str.c_str() << ", "
-                      << "qps = " << std::right << std::setw(8) << qps << ", "
+                      << "qps = " << std::right << std::setw(7) << qps << ", "
                       << "BandWidth = "
-                      << std::right << std::setw(8)
+                      << std::right << std::setw(7)
                       << std::setiosflags(std::ios::fixed) << std::setprecision(3)
                       << ((qps * packet_size) / (1024.0 * 1024.0))
                       << " MB/s" << std::endl;
@@ -148,7 +149,7 @@ void run_asio_http_server(const std::string & ip, const std::string & port,
             auto qps = (cur_succeed_count - last_query_count);
             std::cout << ip.c_str() << ":" << port.c_str() << " - " << packet_size << " bytes : "
                       << thread_num << " thread(s) : "
-                      << "[" << client_count << "] conn(s) : "
+                      << "[" << std::right << std::setw(4) << client_count << "] conn(s) : "
                       << "mode = " << g_test_mode_str.c_str() << ", "
                       << "test = " << g_test_method_str.c_str() << ", "
                       << "qps = " << std::right << std::setw(8) << qps << ", "
@@ -262,17 +263,20 @@ int main(int argc, char * argv[])
     }
     if (test_mode == "http") {
         g_test_mode = test_mode_http_server;
-        g_test_mode_str = "http server";
+        g_test_mode_str = test_mode;
+        g_test_mode_full_str = "http server";
     }
     else if (test_mode == "no-echo") {
         g_test_mode = test_mode_echo_server;
-        g_test_mode_str = "non-echo server";
+        g_test_mode_str = test_mode;
+        g_test_mode_full_str = "non-echo server";
     }
     else {
         g_test_mode = test_mode_echo_server;
-        g_test_mode_str = "echo server";
+        g_test_mode_str = "echo";
+        g_test_mode_full_str = "echo server";
     }
-    std::cout << "test mode: " << test_mode.c_str() << std::endl;
+    std::cout << "test mode: " << g_test_mode_str.c_str() << std::endl;
 
     // test
     if (vars_map.count("test") > 0) {
@@ -317,7 +321,7 @@ int main(int argc, char * argv[])
     std::cout << app_name.c_str() << " begin ..." << std::endl;
     std::cout << std::endl;
     std::cout << "listen " << server_ip.c_str() << ":" << server_port.c_str() << std::endl;
-    std::cout << "mode: " << g_test_mode_str.c_str() << std::endl;
+    std::cout << "mode: " << g_test_mode_full_str.c_str() << std::endl;
     std::cout << "test: " << g_test_method_str.c_str() << std::endl;
     std::cout << "packet_size: " << packet_size << ", thread_num: " << thread_num << std::endl;
     std::cout << std::endl;

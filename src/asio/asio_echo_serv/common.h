@@ -10,6 +10,7 @@ extern uint32_t g_need_echo;
 
 extern std::string g_test_mode_str;
 extern std::string g_test_method_str;
+extern std::string g_test_mode_full_str;
 extern std::string g_rpc_topic;
 
 extern std::string g_server_ip;
