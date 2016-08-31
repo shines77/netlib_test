@@ -438,10 +438,12 @@ private:
                         std::cout << "recv_bytes = " << recv_bytes << std::endl;
                     }
                     else {
-                        if (debug_output_cnt < 30) {
+#if 0
+                        if (debug_output_cnt < 20) {
                             std::cout << "recv_bytes = " << recv_bytes << std::endl;
                             debug_output_cnt++;
                         }
+#endif
                     }
                     // Count the recieved bytes
                     do_recieve_counter((uint32_t)recv_bytes);
