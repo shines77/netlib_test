@@ -423,6 +423,8 @@ private:
     void do_read_some()
     {
         static bool is_first_read = true;
+        static int debug_output_cnt = 0;
+
         char * read_data = buffer_.front();
         std::size_t read_size = buffer_.free_size();
 
@@ -436,7 +438,10 @@ private:
                         std::cout << "recv_bytes = " << recv_bytes << std::endl;
                     }
                     else {
-                        std::cout << "recv_bytes = " << recv_bytes << std::endl;
+                        if (debug_output_cnt < 500) {
+                            std::cout << "recv_bytes = " << recv_bytes << std::endl;
+                            debug_output_cnt++;
+                        }
                     }
                     // Count the recieved bytes
                     do_recieve_counter((uint32_t)recv_bytes);
