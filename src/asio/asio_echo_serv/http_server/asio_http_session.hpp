@@ -28,20 +28,21 @@ using namespace boost::asio;
 
 namespace asio_test {
 
-static const std::string g_response_html = "HTTP/1.1 200 OK\r\n"
-                                           "Date: Fri, 19 Aug 2016 16:25:26 GMT\r\n"
-                                           "Server: boost-asio\r\n"
-                                           "Content-Type: text/html\r\n"
-                                           "Content-Length: 12\r\n"
-                                           "Connection: Keep-Alive\r\n\r\n"
-                                           "Hello World!";
+static const std::string g_response_html =
+    "HTTP/1.1 200 OK\r\n"
+    "Date: Fri, 31 Aug 2016 16:25:26 GMT\r\n"
+    "Server: boost-asio\r\n"
+    "Content-Type: text/html\r\n"
+    "Content-Length: 12\r\n"
+    "Connection: Keep-Alive\r\n\r\n"
+    "Hello World!";
 
 ////////////////////////////////////////////////////////////////////////////////////
 /*
 
                             < Http Ring Buffer >
 
- Bottom       LastParse     Parsed              Front                          Top
+ Bottom        Back         Parsed              Front                          Top
     |-----------|--------------|------------------|-----------------------------|
                 ^              ^                  ^
 */
@@ -64,6 +65,21 @@ public:
     }
     ~http_ring_buffer() {}
 
+private:
+    void init_ring_buffer(std::size_t buffer_size) {
+        char * newBuffer = new (std::nothrow) char [buffer_size * 2];
+        if (newBuffer)
+            ::memset(newBuffer, 0, buffer_size * 2 * sizeof(char));
+        buffer_.reset(newBuffer);
+
+        char * _bottom = buffer_.get();
+        top_ = _bottom + buffer_size * 2;
+        back_ = _bottom;
+        parsed_ = _bottom;
+        front_ = _bottom;
+    }
+
+public:
     std::size_t buffer_size() const { return buffer_size_; }
     std::size_t total_sizes() const { return buffer_size_ * 2; }
     std::size_t offset() const { return static_cast<std::size_t>(back_ - buffer_.get()); }
@@ -71,7 +87,7 @@ public:
     std::size_t free_size() const { return static_cast<std::size_t>(top_ - front_); }
     std::size_t data_length() const { return static_cast<std::size_t>(front_ - back_); }
 
-    std::size_t parse_offset() const { return static_cast<std::size_t>(parsed_ - back_); }
+    std::size_t parse_pos() const { return static_cast<std::size_t>(parsed_ - back_); }
 
     char * data() const { return buffer_.get(); }
 
@@ -81,10 +97,10 @@ public:
     char * parsed() const { return parsed_; }
     char * front() const { return front_; }
 
-    void reset(std::size_t data_bytes, std::size_t parsed_offset) {
+    void reset(std::size_t data_bytes, std::size_t parsed_pos) {
         char * _bottom = buffer_.get();
         back_ = _bottom;
-        parsed_ = _bottom + parsed_offset;
+        parsed_ = _bottom + parsed_pos;
         front_ = _bottom + data_bytes;
     }
 
@@ -92,7 +108,7 @@ public:
         std::size_t empty_bytes = empty_size();
         std::size_t free_bytes = free_size();
         std::size_t data_bytes = data_length();
-        std::size_t parsed_offset = parse_offset();
+        std::size_t parsed_offset = parse_pos();
 
         if (data_bytes <= empty_bytes) {
             ::memcpy(bottom(), back(), data_bytes);
@@ -145,20 +161,6 @@ public:
         }
         parsed = (cur - 1);
         return false;
-    }
-
-private:
-    void init_ring_buffer(std::size_t buffer_size) {
-        char * newBuffer = new (std::nothrow) char [buffer_size * 2];
-        if (newBuffer)
-            ::memset(newBuffer, 0, buffer_size * 2 * sizeof(char));
-        buffer_.reset(newBuffer);
-
-        char * _bottom = buffer_.get();
-        top_ = _bottom + buffer_size * 2;
-        back_ = _bottom;
-        parsed_ = _bottom;
-        front_ = _bottom;
     }
 };
 
@@ -420,6 +422,7 @@ private:
 
     void do_read_some()
     {
+        static bool is_first_read = true;
         char * read_data = buffer_.front();
         std::size_t read_size = buffer_.free_size();
 
@@ -427,6 +430,14 @@ private:
             [this](const boost::system::error_code & ec, std::size_t recv_bytes)
             {
                 if (!ec) {
+                    if (is_first_read) {
+                        packet_size_ = (uint32_t)recv_bytes;
+                        is_first_read = false;
+                        std::cout << "recv_bytes = " << recv_bytes << std::endl;
+                    }
+                    else {
+                        std::cout << "recv_bytes = " << recv_bytes << std::endl;
+                    }
                     // Count the recieved bytes
                     do_recieve_counter((uint32_t)recv_bytes);
 
@@ -444,7 +455,7 @@ private:
                     if (http_header_ok) {
                         buffer_.parse_to(scanned);
 
-                        // A successful request, can be used to statistic qps.
+                        // A successful http request, can be used to statistic qps.
                         do_write_http_response();
                     }
                     else {
@@ -475,7 +486,7 @@ private:
 
                     if ((uint32_t)send_bytes != g_response_html.size() && send_bytes != 0) {
                         std::cout << "asio_http_session::do_write_some(): async_write(), send_bytes = "
-                                    << send_bytes << " bytes." << std::endl;
+                                  << send_bytes << " bytes." << std::endl;
                     }
 
                     do_read_some();
@@ -483,8 +494,8 @@ private:
                 else {
                     // Write error log
                     std::cout << "asio_http_session::do_write_some() - Error: (send_bytes = " << send_bytes
-                                << ", code = " << ec.value() << ") "
-                                << ec.message().c_str() << std::endl;
+                              << ", code = " << ec.value() << ") "
+                              << ec.message().c_str() << std::endl;
                     stop(true);
                 }
             }

@@ -126,7 +126,7 @@ void run_asio_http_server(const std::string & ip, const std::string & port,
                           uint32_t packet_size, uint32_t thread_num,
                           bool confirm = false)
 {
-    static const uint32_t kSeesionBufferSize = 32768;
+    static const uint32_t kSeesionBufferSize = 65536;
     try
     {
         async_asio_http_server server(ip, port, kSeesionBufferSize, packet_size, thread_num);
@@ -147,6 +147,7 @@ void run_asio_http_server(const std::string & ip, const std::string & port,
             std::cout << ip.c_str() << ":" << port.c_str() << " - " << packet_size << " bytes : "
                       << thread_num << " thread(s) : "
                       << "[" << client_count << "] conn(s) : "
+                      << "test = " << g_test_method_str.c_str() << ", "
                       << "qps = " << std::right << std::setw(8) << qps << ", "
                       << "BandWidth = "
                       << std::right << std::setw(8)
