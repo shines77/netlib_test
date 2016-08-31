@@ -60,6 +60,8 @@ void run_asio_echo_serv(const std::string & ip, const std::string & port,
             std::cout << ip.c_str() << ":" << port.c_str() << " - " << packet_size << " bytes : "
                       << thread_num << " threads : "
                       << "[" << std::left << std::setw(4) << client_count << "] conns : "
+                      << "mode = " << g_test_mode_str.c_str() << ", "
+                      << "test = " << g_test_method_str.c_str() << ", "
                       << "qps = " << std::right << std::setw(7) << qps << ", "
                       << "BandWidth = "
                       << std::right << std::setw(7)
@@ -148,8 +150,8 @@ void run_asio_http_server(const std::string & ip, const std::string & port,
             auto client_count = (uint32_t)g_client_count;
             auto qps = (cur_succeed_count - last_query_count);
             std::cout << ip.c_str() << ":" << port.c_str() << " - " << packet_size << " bytes : "
-                      << thread_num << " thread(s) : "
-                      << "[" << std::right << std::setw(4) << client_count << "] conn(s) : "
+                      << thread_num << " threads : "
+                      << "[" << std::left << std::setw(4) << client_count << "] conns : "
                       << "mode = " << g_test_mode_str.c_str() << ", "
                       << "test = " << g_test_method_str.c_str() << ", "
                       << "qps = " << std::right << std::setw(8) << qps << ", "
