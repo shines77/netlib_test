@@ -438,7 +438,7 @@ private:
                         std::cout << "recv_bytes = " << recv_bytes << std::endl;
                     }
                     else {
-                        if (debug_output_cnt < 500) {
+                        if (debug_output_cnt < 30) {
                             std::cout << "recv_bytes = " << recv_bytes << std::endl;
                             debug_output_cnt++;
                         }
