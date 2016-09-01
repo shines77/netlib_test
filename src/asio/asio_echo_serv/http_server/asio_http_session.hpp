@@ -149,11 +149,42 @@ public:
         }
     }
 
-    bool parse(char *& parsed) {
+    bool parse(char * &parsed) {
+#if 1
+        // Back-tracking find method
+        char * cur = front_ - 4;
+        while (cur >= parsed_) {
+            if (cur[0] == '\r') {
+                if (cur[2] == '\r') {
+                    if (cur[1] == '\n' && cur[3] == '\n') {
+                        parsed = (cur + 4);
+                        return true;
+                    }
+                    // TODO: If HTTP header request format is standard, this way is Ok.
+                    cur -= 4;
+                }
+                else if (cur[1] == '\n') {
+                    cur -= 2;
+                }
+                else {
+                    cur -= 4;
+                }
+            }
+            else if (cur[0] == '\n') {
+                cur--;
+            }
+            else {
+                cur -= 4;
+            }
+        }
+        parsed = front_;
+        return false;
+#else
+        // Forward-tracking find method
         char * cur = parsed_;
         while (cur <= (front_ - 4)) {
-            if (cur[0] == '\r' && cur[1] == '\n'
-                && cur[2] == '\r' && cur[3] == '\n') {
+            if (cur[0] == '\r' && cur[2] == '\n'
+                && cur[1] == '\r' && cur[3] == '\n') {
                 parsed = (cur + 4);
                 return true;
             }
@@ -161,6 +192,7 @@ public:
         }
         parsed = (cur - 1);
         return false;
+#endif
     }
 };
 
