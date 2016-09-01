@@ -434,6 +434,7 @@ private:
                 if (!ec) {
                     if (is_first_read) {
                         packet_size_ = (uint32_t)recv_bytes;
+                        g_packet_size = packet_size_;
                         is_first_read = false;
                         std::cout << "recv_bytes = " << recv_bytes << std::endl;
                     }

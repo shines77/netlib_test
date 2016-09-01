@@ -19,6 +19,7 @@ namespace app_opts = boost::program_options;
 uint32_t g_test_mode    = asio_test::test_mode_echo_server;
 uint32_t g_test_method  = asio_test::test_method_pingpong;
 uint32_t g_need_echo    = 1;
+uint32_t g_packet_size  = 64;
 
 std::string g_test_mode_str      = "echo";
 std::string g_test_method_str    = "pingpong";
@@ -149,6 +150,7 @@ void run_asio_http_server(const std::string & ip, const std::string & port,
             auto cur_succeed_count = (uint64_t)g_query_count;
             auto client_count = (uint32_t)g_client_count;
             auto qps = (cur_succeed_count - last_query_count);
+            packet_size = g_packet_size;
             std::cout << ip.c_str() << ":" << port.c_str() << " - " << packet_size << " bytes : "
                       << thread_num << " threads : "
                       << "[" << std::left << std::setw(4) << client_count << "] conns : "
@@ -299,6 +301,7 @@ int main(int argc, char * argv[])
         std::cerr << "Warnning: packet_size = " << packet_size << " can not set to more than "
                   << MAX_PACKET_SIZE << " bytes [MAX_PACKET_SIZE]." << std::endl;
     }
+    g_packet_size = packet_size;
 
     // thread-num
     if (vars_map.count("thread-num") > 0) {
