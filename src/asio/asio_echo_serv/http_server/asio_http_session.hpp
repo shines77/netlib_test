@@ -496,7 +496,7 @@ private:
                         buffer_.parse_to(scanned);
 
                         // A successful http request, can be used to statistic qps.
-#if 1
+#if 0
                         do_write_http_response_some();
 #else
                         do_write_http_response();
@@ -525,10 +525,12 @@ private:
             [this](const boost::system::error_code & ec, std::size_t send_bytes)
             {
                 if (!ec) {
+#if 0
                     if (is_first_read) {
                         std::cout << "g_response_html.size() = " << g_response_html.size() << std::endl;
                         is_first_read = false;
                     }
+#endif
                     // Count the sent bytes
                     do_send_counter((uint32_t)send_bytes);
 
@@ -561,10 +563,12 @@ private:
             [this](const boost::system::error_code & ec, std::size_t send_bytes)
             {
                 if (!ec) {
+#if 0
                     if (is_first_read) {
                         std::cout << "g_response_html.size() = " << g_response_html.size() << std::endl;
                         is_first_read = false;
                     }
+#endif
                     // Count the sent bytes
                     do_send_counter((uint32_t)send_bytes);
 
