@@ -28,7 +28,7 @@ using namespace boost::asio;
 
 namespace asio_test {
 
-static const std::string g_response_html =
+const std::string g_response_html =
     "HTTP/1.1 200 OK\r\n"
     "Date: Fri, 31 Aug 2016 16:25:26 GMT\r\n"
     "Server: boost-asio\r\n"

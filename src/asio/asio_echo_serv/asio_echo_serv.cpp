@@ -67,7 +67,7 @@ void run_asio_echo_serv(const std::string & ip, const std::string & port,
                       << "test = " << g_test_method_str.c_str() << ", "
                       << "qps = " << std::right << std::setw(7) << qps << ", "
                       << "BandWidth = "
-                      << std::right << std::setw(7)
+                      << std::right << std::setw(6)
                       << std::setiosflags(std::ios::fixed) << std::setprecision(3)
                       << ((qps * packet_size) / (1024.0 * 1024.0))
                       << " MB/s" << std::endl;
@@ -112,7 +112,7 @@ void run_asio_echo_serv_ex(const std::string & ip, const std::string & port,
                       << "test = " << g_test_method_str.c_str() << ", "
                       << "qps = " << std::right << std::setw(7) << qps << ", "
                       << "BandWidth = "
-                      << std::right << std::setw(7)
+                      << std::right << std::setw(6)
                       << std::setiosflags(std::ios::fixed) << std::setprecision(3)
                       << ((qps * packet_size) / (1024.0 * 1024.0))
                       << " MB/s" << std::endl;
@@ -144,23 +144,30 @@ void run_asio_http_server(const std::string & ip, const std::string & port,
         }
         std::cout << std::endl;
 
+        static const std::size_t response_html_size = g_response_html.size();
+
         uint64_t last_query_count = 0;
         while (true) {
             auto cur_succeed_count = (uint64_t)g_query_count;
             auto client_count = (uint32_t)g_client_count;
             auto qps = (cur_succeed_count - last_query_count);
             packet_size = g_packet_size;
-            std::cout << ip.c_str() << ":" << port.c_str() << " - " << packet_size << " bytes : "
-                      << thread_num << " threads : "
-                      << "[" << std::left << std::setw(4) << client_count << "] conns : "
-                      << "nodelay = " << g_nodelay << ", "
-                      << "mode = " << g_test_mode_str.c_str() << ", "
-                      << "test = " << g_test_method_str.c_str() << ", "
-                      << "qps = " << std::right << std::setw(8) << qps << ", "
-                      << "BandWidth = "
-                      << std::right << std::setw(8)
+            std::cout << ip.c_str() << ":" << port.c_str() << " - " << packet_size << " bytes | "
+                      << thread_num << " threads | "
+                      << "[" << std::left << std::setw(4) << client_count << "] conns | "
+                      << "nodelay: " << g_nodelay << ", "
+                      << "mode: " << g_test_mode_str.c_str() << ", "
+                      << "test: " << g_test_method_str.c_str() << ", "
+                      << "qps = " << std::right << std::setw(7) << qps << ", "
+                      << "Recv BW: "
+                      << std::right << std::setw(6)
                       << std::setiosflags(std::ios::fixed) << std::setprecision(3)
                       << ((qps * packet_size) / (1024.0 * 1024.0))
+                      << " MB/s, "
+                      << "Send BW: "
+                      << std::right << std::setw(6)
+                      << std::setiosflags(std::ios::fixed) << std::setprecision(3)
+                      << ((qps * response_html_size) / (1024.0 * 1024.0))
                       << " MB/s" << std::endl;
             std::cout << std::right;
             last_query_count = cur_succeed_count;

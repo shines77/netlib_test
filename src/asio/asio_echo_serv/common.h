@@ -52,4 +52,6 @@ extern padding_atomic<uint32_t> g_client_count;
 extern padding_atomic<uint64_t> g_recv_bytes;
 extern padding_atomic<uint64_t> g_send_bytes;
 
+extern const std::string g_response_html;
+
 }
