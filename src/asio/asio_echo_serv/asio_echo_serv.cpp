@@ -220,16 +220,16 @@ int main(int argc, char * argv[])
 
     app_opts::options_description desc("Command list");
     desc.add_options()
-        ("help,h",                                                                                      "usage info")
-        ("host,s",          app_opts::value<std::string>(&server_ip)->default_value("127.0.0.1"),       "server host or ip address")
-        ("port,p",          app_opts::value<std::string>(&server_port)->default_value("9000"),          "server port")
-        ("mode,m",          app_opts::value<std::string>(&test_mode)->default_value("echo"),            "test mode = [echo]")
-        ("test,t",          app_opts::value<std::string>(&test_method)->default_value("pingpong"),      "test method = [pingpong, qps, latency, throughput]")
-        ("pipeline,l",      app_opts::value<int32_t>(&pipeline)->default_value(1),                      "pipeline numbers")
-        ("packet-size,k",   app_opts::value<int32_t>(&packet_size)->default_value(64),                  "packet size")
-        ("thread-num,n",    app_opts::value<int32_t>(&thread_num)->default_value(0),                    "thread numbers")
-        ("nodelay,y",       app_opts::value<std::string>(&nodelay)->default_value("false"),             "TCP socket nodelay = [0 or 1, true or false]")
-        ("echo,e",          app_opts::value<int32_t>(&need_echo)->default_value(1),                     "whether the server need echo")
+        ("help,h",                                                                                  "usage info")
+        ("host,s",          app_opts::value<std::string>(&server_ip)->default_value("127.0.0.1"),   "server host or ip address")
+        ("port,p",          app_opts::value<std::string>(&server_port)->default_value("9000"),      "server port")
+        ("mode,m",          app_opts::value<std::string>(&test_mode)->default_value("echo"),        "test mode = [echo]")
+        ("test,t",          app_opts::value<std::string>(&test_method)->default_value("pingpong"),  "test method = [pingpong, qps, latency, throughput]")
+        ("pipeline,l",      app_opts::value<int32_t>(&pipeline)->default_value(1),                  "pipeline numbers")
+        ("packet-size,k",   app_opts::value<int32_t>(&packet_size)->default_value(64),              "packet size")
+        ("thread-num,n",    app_opts::value<int32_t>(&thread_num)->default_value(0),                "thread numbers")
+        ("nodelay,y",       app_opts::value<std::string>(&nodelay)->default_value("false"),         "TCP socket nodelay = [0 or 1, true or false]")
+        ("echo,e",          app_opts::value<int32_t>(&need_echo)->default_value(1),                 "whether the server need echo")
         ;
 
     // parse command line
