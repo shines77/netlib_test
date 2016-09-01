@@ -236,7 +236,8 @@ public:
         socket_.cancel();
 #endif
         //socket_.shutdown(socket_base::shutdown_both);
-        socket_.close();
+        if (socket_.is_open())
+            socket_.close();
     }
 
     void start()
@@ -250,7 +251,7 @@ public:
         ::setsockopt(socket_.native_handle(), SOL_SOCKET, SO_SNDTIMEO, (const char *)&kNetSendTimeout, sizeof(kNetSendTimeout));
         ::setsockopt(socket_.native_handle(), SOL_SOCKET, SO_RCVTIMEO, (const char *)&kNetRecvTimeout, sizeof(kNetRecvTimeout));
 
-        socket_.set_option(ip::tcp::no_delay(true));
+        socket_.set_option(ip::tcp::no_delay((g_nodelay != 0)));
 
         linger sLinger;
         sLinger.l_onoff = 1;    // Enable linger

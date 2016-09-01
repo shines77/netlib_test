@@ -18,12 +18,14 @@ namespace app_opts = boost::program_options;
 
 uint32_t g_test_mode    = asio_test::test_mode_echo_server;
 uint32_t g_test_method  = asio_test::test_method_pingpong;
+uint32_t g_nodelay      = 0;
 uint32_t g_need_echo    = 1;
 uint32_t g_packet_size  = 64;
 
 std::string g_test_mode_str      = "echo";
 std::string g_test_method_str    = "pingpong";
 std::string g_test_mode_full_str = "echo server";
+std::string g_nodelay_str        = "false";
 std::string g_rpc_topic;
 
 std::string g_server_ip;
@@ -41,8 +43,7 @@ void run_asio_echo_serv(const std::string & ip, const std::string & port,
                         uint32_t packet_size, uint32_t thread_num,
                         bool confirm = false)
 {
-    try
-    {
+    try {
         async_asio_echo_serv server(ip, port, packet_size, thread_num);
         server.run();
 
@@ -61,6 +62,7 @@ void run_asio_echo_serv(const std::string & ip, const std::string & port,
             std::cout << ip.c_str() << ":" << port.c_str() << " - " << packet_size << " bytes : "
                       << thread_num << " threads : "
                       << "[" << std::left << std::setw(4) << client_count << "] conns : "
+                      << "nodelay = " << g_nodelay << ", "
                       << "mode = " << g_test_mode_str.c_str() << ", "
                       << "test = " << g_test_method_str.c_str() << ", "
                       << "qps = " << std::right << std::setw(7) << qps << ", "
@@ -76,8 +78,7 @@ void run_asio_echo_serv(const std::string & ip, const std::string & port,
 
         server.join();
     }
-    catch (const std::exception & e)
-    {
+    catch (const std::exception & e) {
         std::cerr << "Exception: " << e.what() << std::endl;
     }
 }
@@ -86,9 +87,8 @@ void run_asio_echo_serv_ex(const std::string & ip, const std::string & port,
                            uint32_t packet_size, uint32_t thread_num,
                            bool confirm = false)
 {
-    static const uint32_t kSeesionBufferSize = 32768;
-    try
-    {
+    static const uint32_t kSeesionBufferSize = 65536;
+    try {
         async_asio_echo_serv_ex server(ip, port, kSeesionBufferSize, packet_size, thread_num);
         server.run();
 
@@ -107,6 +107,7 @@ void run_asio_echo_serv_ex(const std::string & ip, const std::string & port,
             std::cout << ip.c_str() << ":" << port.c_str() << " - " << packet_size << " bytes : "
                       << thread_num << " threads : "
                       << "[" << std::left << std::setw(4) << client_count << "] conns : "
+                      << "nodelay = " << g_nodelay << ", "
                       << "mode = " << g_test_mode_str.c_str() << ", "
                       << "test = " << g_test_method_str.c_str() << ", "
                       << "qps = " << std::right << std::setw(7) << qps << ", "
@@ -122,8 +123,7 @@ void run_asio_echo_serv_ex(const std::string & ip, const std::string & port,
 
         server.join();
     }
-    catch (const std::exception & e)
-    {
+    catch (const std::exception & e) {
         std::cerr << "Exception: " << e.what() << std::endl;
     }
 }
@@ -133,8 +133,7 @@ void run_asio_http_server(const std::string & ip, const std::string & port,
                           bool confirm = false)
 {
     static const uint32_t kSeesionBufferSize = 65536;
-    try
-    {
+    try {
         async_asio_http_server server(ip, port, kSeesionBufferSize, packet_size, thread_num);
         server.run();
 
@@ -154,6 +153,7 @@ void run_asio_http_server(const std::string & ip, const std::string & port,
             std::cout << ip.c_str() << ":" << port.c_str() << " - " << packet_size << " bytes : "
                       << thread_num << " threads : "
                       << "[" << std::left << std::setw(4) << client_count << "] conns : "
+                      << "nodelay = " << g_nodelay << ", "
                       << "mode = " << g_test_mode_str.c_str() << ", "
                       << "test = " << g_test_method_str.c_str() << ", "
                       << "qps = " << std::right << std::setw(8) << qps << ", "
@@ -169,8 +169,7 @@ void run_asio_http_server(const std::string & ip, const std::string & port,
 
         server.join();
     }
-    catch (const std::exception & e)
-    {
+    catch (const std::exception & e) {
         std::cerr << "Exception: " << e.what() << std::endl;
     }
 }
@@ -205,7 +204,7 @@ void print_usage(const std::string & app_name, const app_opts::options_descripti
 
 int main(int argc, char * argv[])
 {
-    std::string app_name, test_mode, test_method, rpc_topic;
+    std::string app_name, test_mode, test_method, nodelay, rpc_topic;
     std::string server_ip, server_port;
     std::string mode, test, cmd, cmd_value;
     int32_t pipeline = 1, packet_size = 0, thread_num = 0, need_echo = 1;
@@ -222,6 +221,7 @@ int main(int argc, char * argv[])
         ("pipeline,l",      app_opts::value<int32_t>(&pipeline)->default_value(1),                      "pipeline numbers")
         ("packet-size,k",   app_opts::value<int32_t>(&packet_size)->default_value(64),                  "packet size")
         ("thread-num,n",    app_opts::value<int32_t>(&thread_num)->default_value(0),                    "thread numbers")
+        ("nodelay,y",       app_opts::value<std::string>(&nodelay)->default_value("false"),             "TCP socket nodelay = [0 or 1, true or false]")
         ("echo,e",          app_opts::value<int32_t>(&need_echo)->default_value(1),                     "whether the server need echo")
         ;
 
@@ -312,6 +312,20 @@ int main(int argc, char * argv[])
         thread_num = std::thread::hardware_concurrency();
         std::cout << ">>> thread-num: std::thread::hardware_concurrency() = " << thread_num << std::endl;
     }
+
+    // nodelay
+    if (vars_map.count("nodelay") > 0) {
+        nodelay = vars_map["nodelay"].as<std::string>();
+    }
+    if (nodelay == "1" || nodelay == "true") {
+        g_nodelay = 0;
+        g_nodelay_str = "true";
+    }
+    else {
+        g_nodelay = 0;
+        g_nodelay_str = "false";
+    }
+    std::cout << "TCP scoket no-delay: " << g_nodelay_str.c_str() << std::endl;
 
     // need_echo
     need_echo = 1;

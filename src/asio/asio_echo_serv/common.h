@@ -6,12 +6,14 @@
 
 extern uint32_t g_test_mode;
 extern uint32_t g_test_method;
+extern uint32_t g_nodelay;
 extern uint32_t g_need_echo;
 extern uint32_t g_packet_size;
 
 extern std::string g_test_mode_str;
 extern std::string g_test_method_str;
 extern std::string g_test_mode_full_str;
+extern std::string g_nodelay_str;
 extern std::string g_rpc_topic;
 
 extern std::string g_server_ip;

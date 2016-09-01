@@ -70,7 +70,8 @@ public:
         socket_.cancel();
 #endif
         //socket_.shutdown(socket_base::shutdown_both);
-        socket_.close();
+        if (socket_.is_open())
+            socket_.close();
     }
 
     void start()
