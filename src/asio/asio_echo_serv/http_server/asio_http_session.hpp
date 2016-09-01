@@ -496,8 +496,9 @@ private:
                         buffer_.parse_to(scanned);
 
                         // A successful http request, can be used to statistic qps.
-#if 0
+#if 1
                         do_write_http_response_some();
+                        do_read_some();
 #else
                         do_write_http_response();
 #endif
@@ -553,8 +554,6 @@ private:
                 }
             }
         );
-
-        do_read_some();
     }
 
     void do_write_http_response_some() {
