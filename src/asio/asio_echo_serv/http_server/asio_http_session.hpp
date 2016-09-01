@@ -210,8 +210,9 @@ private:
     uint32_t    recv_bytes_;
     uint32_t    send_bytes_;
     uint32_t    recv_cnt_;
-    uint32_t    sent_cnt_;
+    uint32_t    send_cnt_;
 
+    uint32_t    delta_query_count_;
     uint32_t    recv_bytes_remain_;
     uint32_t    send_bytes_remain_;
 
@@ -221,7 +222,7 @@ public:
     asio_http_session(boost::asio::io_service & io_service, uint32_t buffer_size,
                       uint32_t packet_size, uint32_t need_echo = mode_need_echo)
         : socket_(io_service), need_echo_(need_echo), buffer_size_(buffer_size), packet_size_(packet_size),
-          query_count_(0), recv_bytes_(0), send_bytes_(0), recv_cnt_(0), sent_cnt_(0),
+          query_count_(0), recv_bytes_(0), send_bytes_(0), recv_cnt_(0), send_cnt_(0), delta_query_count_(0),
           recv_bytes_remain_(0), send_bytes_remain_(0), buffer_(buffer_size)
     {
         if (buffer_size_ > MAX_PACKET_SIZE)
@@ -333,11 +334,11 @@ private:
 #else
         if (byte_sent > 0) {
             send_bytes_ += byte_sent;
-            sent_cnt_++;
-            if (sent_cnt_ >= MAX_UPDATE_CNT || send_bytes_ >= MAX_UPDATE_BYTES) {
+            send_cnt_++;
+            if (send_cnt_ >= MAX_UPDATE_CNT || send_bytes_ >= MAX_UPDATE_BYTES) {
                 g_send_bytes.fetch_add(send_bytes_);
                 send_bytes_ = 0;
-                sent_cnt_ = 0;
+                send_cnt_ = 0;
             }
         }
 #endif
@@ -381,23 +382,37 @@ private:
     inline void do_query_counter_write_some(uint32_t send_bytes)
     {
         uint32_t delta_bytes = send_bytes_remain_ + send_bytes;
-        if (delta_bytes >= packet_size_) {
-            uint32_t delta_query_count = delta_bytes / packet_size_;
+        static const uint32_t reponse_size = (uint32_t)g_response_html.size();
+        if (delta_bytes >= reponse_size) {
+            uint32_t delta_query_count = delta_bytes / reponse_size;
 #if defined(USE_ATOMIC_REALTIME_UPDATE) && (USE_ATOMIC_REALTIME_UPDATE > 0)
             if (delta_query_count > 0) {
                 g_query_count.fetch_add(delta_query_count);
-                send_bytes_remain_ = delta_bytes - packet_size_ * delta_query_count;
+                send_bytes_remain_ = delta_bytes - reponse_size * delta_query_count;
                 return;
             }
 #else
             if (delta_query_count >= QUERY_COUNTER_INTERVAL) {
                 g_query_count.fetch_add(delta_query_count);
-                send_bytes_remain_ = delta_bytes - packet_size_ * delta_query_count;
+                send_bytes_remain_ = delta_bytes - reponse_size * delta_query_count;
                 return;
             }
 #endif
         }
         send_bytes_remain_ = delta_bytes;
+    }
+
+    inline void do_query_counter_sync_write()
+    {
+#if defined(USE_ATOMIC_REALTIME_UPDATE) && (USE_ATOMIC_REALTIME_UPDATE > 0)
+        g_query_count.fetch_add(1);
+#else
+        delta_query_count_++;
+        if (delta_query_count_ >= QUERY_COUNTER_INTERVAL) {
+            g_query_count.fetch_add(delta_query_count_);
+            delta_query_count_ = 0;
+        }
+#endif
     }
 
     void do_read()
@@ -500,10 +515,12 @@ private:
 
                         // A successful http request, can be used to statistic qps.
 #if 1
-                        do_write_http_response_some();
+                        do_sync_write_http_response();
+#elif 0
+                        do_async_write_http_response_some();
                         //do_read_some();
 #else
-                        do_write_http_response();
+                        do_async_write_http_response();
 #endif
                     }
                     else {
@@ -523,7 +540,44 @@ private:
         );
     }
 
-    void do_write_http_response() {
+    void do_sync_write_http_response()
+    {
+        static bool is_first_read = true;
+        boost::system::error_code ec;
+        std::size_t send_bytes = boost::asio::write(socket_,
+            boost::asio::buffer(g_response_html.c_str(), g_response_html.size()),
+            ec);
+        if (!ec) {
+#if 0
+            if (is_first_read) {
+                std::cout << "g_response_html.size() = " << g_response_html.size() << std::endl;
+                is_first_read = false;
+            }
+#endif
+            // Count the sent bytes
+            do_send_counter((uint32_t)send_bytes);
+
+            // If get a circle of ping-pong, we count the query one time.
+            do_query_counter_sync_write();
+
+            if ((uint32_t)send_bytes != g_response_html.size() && send_bytes != 0) {
+                std::cout << "asio_http_session::do_write_some(): async_write(), send_bytes = "
+                            << send_bytes << " bytes." << std::endl;
+            }
+
+            do_read_some();
+        }
+        else {
+            // Write error log
+            std::cout << "asio_http_session::do_write_some() - Error: (send_bytes = " << send_bytes
+                        << ", code = " << ec.value() << ") "
+                        << ec.message().c_str() << std::endl;
+            stop(true);
+        }
+    }
+
+    void do_async_write_http_response()
+    {
         static bool is_first_read = true;
         boost::asio::async_write(socket_, boost::asio::buffer(g_response_html.c_str(), g_response_html.size()),
             [this](const boost::system::error_code & ec, std::size_t send_bytes)
@@ -559,7 +613,8 @@ private:
         );
     }
 
-    void do_write_http_response_some() {
+    void do_async_write_http_response_some()
+    {
         static bool is_first_read = true;
         socket_.async_write_some(boost::asio::buffer(g_response_html.c_str(), g_response_html.size()),
             [this](const boost::system::error_code & ec, std::size_t send_bytes)
