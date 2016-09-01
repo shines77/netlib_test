@@ -561,7 +561,7 @@ private:
             do_query_counter_sync_write();
 
             if ((uint32_t)send_bytes != g_response_html.size() && send_bytes != 0) {
-                std::cout << "asio_http_session::do_write_some(): async_write(), send_bytes = "
+                std::cout << "asio_http_session::do_sync_write_http_response(): async_write(), send_bytes = "
                             << send_bytes << " bytes." << std::endl;
             }
 
@@ -569,7 +569,7 @@ private:
         }
         else {
             // Write error log
-            std::cout << "asio_http_session::do_write_some() - Error: (send_bytes = " << send_bytes
+            std::cout << "asio_http_session::do_sync_write_http_response() - Error: (send_bytes = " << send_bytes
                         << ", code = " << ec.value() << ") "
                         << ec.message().c_str() << std::endl;
             stop(true);
@@ -596,7 +596,7 @@ private:
                     do_query_counter_write_some((uint32_t)send_bytes);
 
                     if ((uint32_t)send_bytes != g_response_html.size() && send_bytes != 0) {
-                        std::cout << "asio_http_session::do_write_some(): async_write(), send_bytes = "
+                        std::cout << "asio_http_session::do_async_write_http_response(): async_write(), send_bytes = "
                                   << send_bytes << " bytes." << std::endl;
                     }
 
@@ -604,7 +604,7 @@ private:
                 }
                 else {
                     // Write error log
-                    std::cout << "asio_http_session::do_write_some() - Error: (send_bytes = " << send_bytes
+                    std::cout << "asio_http_session::do_async_write_http_response() - Error: (send_bytes = " << send_bytes
                               << ", code = " << ec.value() << ") "
                               << ec.message().c_str() << std::endl;
                     stop(true);
@@ -633,7 +633,7 @@ private:
                     do_query_counter_write_some((uint32_t)send_bytes);
 
                     if ((uint32_t)send_bytes != g_response_html.size() && send_bytes != 0) {
-                        std::cout << "asio_http_session::do_write_some(): async_write(), send_bytes = "
+                        std::cout << "asio_http_session::do_async_write_http_response_some(): async_write(), send_bytes = "
                                   << send_bytes << " bytes." << std::endl;
                     }
 
@@ -641,7 +641,7 @@ private:
                 }
                 else {
                     // Write error log
-                    std::cout << "asio_http_session::do_write_some() - Error: (send_bytes = " << send_bytes
+                    std::cout << "asio_http_session::do_async_write_http_response_some() - Error: (send_bytes = " << send_bytes
                               << ", code = " << ec.value() << ") "
                               << ec.message().c_str() << std::endl;
                     stop(true);

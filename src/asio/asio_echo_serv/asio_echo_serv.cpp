@@ -322,7 +322,7 @@ int main(int argc, char * argv[])
         g_nodelay_str = "true";
     }
     else {
-        g_nodelay = 0;
+        g_nodelay = 1;
         g_nodelay_str = "false";
     }
     std::cout << "TCP scoket no-delay: " << g_nodelay_str.c_str() << std::endl;
