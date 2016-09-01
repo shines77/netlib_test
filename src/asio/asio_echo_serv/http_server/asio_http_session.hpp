@@ -202,6 +202,7 @@ private:
     enum { PACKET_SIZE = MAX_PACKET_SIZE };
 
     ip::tcp::socket socket_;
+    bool        nodelay_;
     uint32_t    need_echo_;
     uint32_t    buffer_size_;
     uint32_t    packet_size_;
@@ -221,10 +222,11 @@ private:
 public:
     asio_http_session(boost::asio::io_service & io_service, uint32_t buffer_size,
                       uint32_t packet_size, uint32_t need_echo = mode_need_echo)
-        : socket_(io_service), need_echo_(need_echo), buffer_size_(buffer_size), packet_size_(packet_size),
+        : socket_(io_service), nodelay_(false), need_echo_(need_echo), buffer_size_(buffer_size), packet_size_(packet_size),
           query_count_(0), recv_bytes_(0), send_bytes_(0), recv_cnt_(0), send_cnt_(0), delta_query_count_(0),
           recv_bytes_remain_(0), send_bytes_remain_(0), buffer_(buffer_size)
     {
+        nodelay_ = (g_nodelay != 0);
         if (buffer_size_ > MAX_PACKET_SIZE)
             buffer_size_ = MAX_PACKET_SIZE;
         if (packet_size_ > MAX_PACKET_SIZE)
@@ -252,7 +254,7 @@ public:
         ::setsockopt(socket_.native_handle(), SOL_SOCKET, SO_SNDTIMEO, (const char *)&kNetSendTimeout, sizeof(kNetSendTimeout));
         ::setsockopt(socket_.native_handle(), SOL_SOCKET, SO_RCVTIMEO, (const char *)&kNetRecvTimeout, sizeof(kNetRecvTimeout));
 
-        socket_.set_option(ip::tcp::no_delay((g_nodelay != 0)));
+        socket_.set_option(ip::tcp::no_delay(nodelay_));
 
         linger sLinger;
         sLinger.l_onoff = 1;    // Enable linger
@@ -514,15 +516,17 @@ private:
                         buffer_.parse_to(scanned);
 
                         // A successful http request, can be used to statistic qps.
-                        if (g_nodelay != 0) {
-                            do_sync_write_http_response();
-                        }
-                        else {
+                        if (!nodelay_) {
+                            // nodelay = false;
 #if 1
                             do_async_write_http_response();
 #else
                             do_async_write_http_response_some();
 #endif
+                        }
+                        else {
+                            // nodelay = true;
+                            do_sync_write_http_response();
                         }
                     }
                     else {
@@ -632,7 +636,7 @@ private:
                     do_send_counter((uint32_t)send_bytes);
 
                     // If get a circle of ping-pong, we count the query one time.
-                    do_query_counter_write_some((uint32_t)send_bytes);
+                    do_query_counter_sync_write();
 
                     if ((uint32_t)send_bytes != g_response_html.size() && send_bytes != 0) {
                         std::cout << "asio_http_session::do_async_write_http_response_some(): async_write(), send_bytes = "
