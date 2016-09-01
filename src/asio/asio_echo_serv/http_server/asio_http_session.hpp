@@ -250,6 +250,8 @@ public:
         ::setsockopt(socket_.native_handle(), SOL_SOCKET, SO_SNDTIMEO, (const char *)&kNetSendTimeout, sizeof(kNetSendTimeout));
         ::setsockopt(socket_.native_handle(), SOL_SOCKET, SO_RCVTIMEO, (const char *)&kNetRecvTimeout, sizeof(kNetRecvTimeout));
 
+        socket_.set_option(ip::tcp::no_delay(true));
+
         linger sLinger;
         sLinger.l_onoff = 1;    // Enable linger
         sLinger.l_linger = 5;   // After shutdown(), socket send/recv 5 second data yet.
@@ -498,7 +500,7 @@ private:
                         // A successful http request, can be used to statistic qps.
 #if 1
                         do_write_http_response_some();
-                        do_read_some();
+                        //do_read_some();
 #else
                         do_write_http_response();
 #endif
