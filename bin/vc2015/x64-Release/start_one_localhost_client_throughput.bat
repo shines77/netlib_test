@@ -1,4 +1,3 @@
 @echo "start test clients ..."
-rem asio_echo_client.exe mode=qps 192.168.2.191 8090 64
-asio_echo_client.exe mode=throughput 192.168.2.154 8090 100
+asio_echo_client.exe --host=192.168.2.231 --port=8090 --mode=echo --test=throughput --packet-size=64 --thread-num=1
 pause

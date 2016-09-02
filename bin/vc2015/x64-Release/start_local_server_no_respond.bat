@@ -1,3 +1,3 @@
 @echo "start test server ..."
-asio_echo_serv.exe response=0 127.0.0.1 8090 64
+asio_echo_serv.exe --host=127.0.0.1 --port=8090 --mode=echo --test=qps --packet-size=64 --thread-num=1 --echo=0
 pause
