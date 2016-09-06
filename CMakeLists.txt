@@ -1,4 +1,5 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8.12)
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
+
 project(netlib_test)
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
@@ -26,7 +27,6 @@ if (Boost_FOUND)
 endif()
 
 find_package (Threads)
-Include_directories(include)
 
 if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
@@ -45,6 +45,10 @@ message("  PROJECT_BINARY_DIR: ${PROJECT_BINARY_DIR}")
 message("----------------------------------")
 
 if (NOT MSVC)
+    ## -Wall -Werror -Wextra -Wno-format -Wno-unused-function
+    set(CMAKE_CXX_FLAGS_DEFAULT "-std=c++11 -fPIC -pthread")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_DEFAULT} -O3 -DNDEBUG")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEFAULT} -g -pg -D_DEBUG")
     add_compile_options("-std=c++11")
     add_compile_options("-Wall")
     add_compile_options("-Wno-unused-function")
@@ -54,7 +58,7 @@ if (NOT MSVC)
 endif()
 
 if (WIN32)
-    add_compile_options("-D_WIN32_WINNT=0x0501")
+    add_compile_options("-D_WIN32_WINNT=0x0601")
     add_compile_options("-D_CRT_SECURE_NO_WARNINGS")
     set(EXTRA_LIBS ${EXTRA_LIBS} ws2_32 mswsock)
     if (Boost_USE_STATIC_RUNTIME)
@@ -86,13 +90,15 @@ if (UNIX)
     set(EXTRA_LIBS ${EXTRA_LIBS} pthread)
 endif()
 
+Include_directories(include)
+
 include_directories(
     "${PROJECT_SOURCE_DIR}/src"
-    )
+)
 
 set(SOURCE_FILES
     src/common/padding_atomic.hpp
-    )
+)
 
 subdirs(
     test
