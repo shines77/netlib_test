@@ -46,15 +46,9 @@ message("----------------------------------")
 
 if (NOT MSVC)
     ## -Wall -Werror -Wextra -Wno-format -Wno-unused-function
-    set(CMAKE_CXX_FLAGS_DEFAULT "-std=c++11 -fPIC -pthread")
+    set(CMAKE_CXX_FLAGS_DEFAULT "-std=c++11 -Wall -Wno-unused-function -Wno-deprecated-declarations -Wno-unused-variable -fPIC -pthread")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_DEFAULT} -O3 -DNDEBUG")
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEFAULT} -g -pg -D_DEBUG")
-    add_compile_options("-std=c++11")
-    add_compile_options("-Wall")
-    add_compile_options("-Wno-unused-function")
-    add_compile_options("-Wno-deprecated-declarations")
-    add_compile_options("-Wno-unused-variable")
-    ##add_compile_options("-Wextra")
 endif()
 
 if (WIN32)
