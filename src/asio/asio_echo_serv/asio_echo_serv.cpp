@@ -181,29 +181,28 @@ void run_asio_http_server(const std::string & ip, const std::string & port,
     }
 }
 
-void make_align_spaces(const std::string & name, std::string & spaces)
+void make_spaces(std::string & spaces, std::size_t size)
 {
-    size_t len = name.size();
     spaces = "";
-    for (size_t i = 0; i < len; ++i)
+    for (std::size_t i = 0; i < size; ++i)
         spaces += " ";
 }
 
 void print_usage(const std::string & app_name, const app_opts::options_description & options_desc)
 {
-    std::string align_spaces;
-    make_align_spaces(app_name, align_spaces);
+    std::string leader_spaces;
+    make_spaces(leader_spaces, app_name.size());
 
     std::cerr << std::endl;
     std::cerr << options_desc << std::endl;
 
     std::cerr << "Usage: " << std::endl << std::endl
-              << "  " << app_name.c_str()     << " --host=<host> --port=<port> --mode=<mode> --test=<test>" << std::endl
-              << "  " << align_spaces.c_str() << " [--pipeline=1] [--packet_size=64] [--thread-num=0]" << std::endl
+              << "  " << app_name.c_str()      << " --host=<host> --port=<port> --mode=<mode> --test=<test>" << std::endl
+              << "  " << leader_spaces.c_str() << " [--pipeline=1] [--packet_size=64] [--thread-num=0]" << std::endl
               << std::endl
               << "For example: " << std::endl << std::endl
-              << "  " << app_name.c_str()     << " --host=127.0.0.1 --port=9000 --mode=echo --test=pingpong" << std::endl
-              << "  " << align_spaces.c_str() << " --pipeline=10 --packet-size=64 --thread-num=8" << std::endl
+              << "  " << app_name.c_str()      << " --host=127.0.0.1 --port=9000 --mode=echo --test=pingpong" << std::endl
+              << "  " << leader_spaces.c_str() << " --pipeline=10 --packet-size=64 --thread-num=8" << std::endl
               << std::endl
               << "  " << app_name.c_str() << " -s 127.0.0.1 -p 9000 -m echo -t pingpong -l 10 -k 64 -n 8" << std::endl;
     std::cerr << std::endl;
