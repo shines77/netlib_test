@@ -14,8 +14,6 @@
 #include "async_aiso_echo_serv_ex.hpp"
 #include "http_server/async_asio_http_server.hpp"
 
-namespace app_opts = boost::program_options;
-
 uint32_t g_test_mode    = asio_test::test_mode_echo_server;
 uint32_t g_test_method  = asio_test::test_method_pingpong;
 uint32_t g_nodelay      = 0;
@@ -188,7 +186,7 @@ void make_spaces(std::string & spaces, std::size_t size)
         spaces += " ";
 }
 
-void print_usage(const std::string & app_name, const app_opts::options_description & options_desc)
+void print_usage(const std::string & app_name, const boost::program_options::options_description & options_desc)
 {
     std::string leader_spaces;
     make_spaces(leader_spaces, app_name.size());
@@ -215,34 +213,34 @@ int main(int argc, char * argv[])
     std::string mode, test, cmd, cmd_value;
     int32_t pipeline = 1, packet_size = 0, thread_num = 0, need_echo = 1;
 
-    app_name = get_app_name(argv[0]);
-
-    app_opts::options_description desc("Command list");
+    namespace options = boost::program_options;
+    options::options_description desc("Command list");
     desc.add_options()
         ("help,h",                                                                                  "usage info")
-        ("host,s",          app_opts::value<std::string>(&server_ip)->default_value("127.0.0.1"),   "server host or ip address")
-        ("port,p",          app_opts::value<std::string>(&server_port)->default_value("9000"),      "server port")
-        ("mode,m",          app_opts::value<std::string>(&test_mode)->default_value("echo"),        "test mode = [echo]")
-        ("test,t",          app_opts::value<std::string>(&test_method)->default_value("pingpong"),  "test method = [pingpong, qps, latency, throughput]")
-        ("pipeline,l",      app_opts::value<int32_t>(&pipeline)->default_value(1),                  "pipeline numbers")
-        ("packet-size,k",   app_opts::value<int32_t>(&packet_size)->default_value(64),              "packet size")
-        ("thread-num,n",    app_opts::value<int32_t>(&thread_num)->default_value(0),                "thread numbers")
-        ("nodelay,y",       app_opts::value<std::string>(&nodelay)->default_value("false"),         "TCP socket nodelay = [0 or 1, true or false]")
-        ("echo,e",          app_opts::value<int32_t>(&need_echo)->default_value(1),                 "whether the server need echo")
+        ("host,s",          options::value<std::string>(&server_ip)->default_value("127.0.0.1"),    "server host or ip address")
+        ("port,p",          options::value<std::string>(&server_port)->default_value("9000"),       "server port")
+        ("mode,m",          options::value<std::string>(&test_mode)->default_value("echo"),         "test mode = [echo]")
+        ("test,t",          options::value<std::string>(&test_method)->default_value("pingpong"),   "test method = [pingpong, qps, latency, throughput]")
+        ("pipeline,l",      options::value<int32_t>(&pipeline)->default_value(1),                   "pipeline numbers")
+        ("packet-size,k",   options::value<int32_t>(&packet_size)->default_value(64),               "packet size")
+        ("thread-num,n",    options::value<int32_t>(&thread_num)->default_value(0),                 "thread numbers")
+        ("nodelay,y",       options::value<std::string>(&nodelay)->default_value("false"),          "TCP socket nodelay = [0 or 1, true or false]")
+        ("echo,e",          options::value<int32_t>(&need_echo)->default_value(1),                  "whether the server need echo")
         ;
 
     // parse command line
-    app_opts::variables_map vars_map;
+    options::variables_map vars_map;
     try {
-        app_opts::store(app_opts::parse_command_line(argc, argv, desc), vars_map);
+        options::store(options::parse_command_line(argc, argv, desc), vars_map);
     }
-    catch (const std::exception & e) {
-        std::cout << "Exception is: " << e.what() << std::endl;
+    catch (const std::exception & ex) {
+        std::cout << "Exception is: " << ex.what() << std::endl;
     }
-    app_opts::notify(vars_map);
+    options::notify(vars_map);
 
     // help
     if (vars_map.count("help") > 0) {
+        std::string app_name = get_app_name(argv[0]);
         print_usage(app_name, desc);
         exit(EXIT_FAILURE);
     }
