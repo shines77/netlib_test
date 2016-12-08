@@ -12,8 +12,6 @@
 #include "test_qps_client.hpp"
 #include "common/cmd_utils.hpp"
 
-namespace app_opts = boost::program_options;
-
 uint32_t g_test_mode      = asio_test::test_mode_echo;
 uint32_t g_test_method    = asio_test::test_method_pingpong;
 
@@ -126,29 +124,28 @@ void run_latency_client(const std::string & app_name, const std::string & ip,
     std::cout << app_name.c_str() << " done." << std::endl;
 }
 
-void make_align_spaces(const std::string & name, std::string & spaces)
+void make_spaces(std::string & spaces, std::size_t size)
 {
-    size_t len = name.size();
     spaces = "";
-    for (size_t i = 0; i < len; ++i)
+    for (std::size_t i = 0; i < size; ++i)
         spaces += " ";
 }
 
-void print_usage(const std::string & app_name, const app_opts::options_description & options_desc)
+void print_usage(const std::string & app_name, const boost::program_options::options_description & options_desc)
 {
-    std::string align_spaces;
-    make_align_spaces(app_name, align_spaces);
+    std::string leader_spaces;
+    make_spaces(leader_spaces, app_name.size());
 
     std::cerr << std::endl;
     std::cerr << options_desc << std::endl;
 
     std::cerr << "Usage: " << std::endl << std::endl
-              << "  " << app_name.c_str()     << " --host=<host> --port=<port> --mode=<mode> --test=<test>" << std::endl
-              << "  " << align_spaces.c_str() << " --pipeline=<pipeline> [--packet_size=64] [--thread-num=0]" << std::endl
+              << "  " << app_name.c_str()      << " --host=<host> --port=<port> --mode=<mode> --test=<test>" << std::endl
+              << "  " << leader_spaces.c_str() << " --pipeline=<pipeline> [--packet_size=64] [--thread-num=0]" << std::endl
               << std::endl
               << "For example: " << std::endl << std::endl
-              << "  " << app_name.c_str()     << " --host=127.0.0.1 --port=9000 --mode=echo --test=pingpong" << std::endl
-              << "  " << align_spaces.c_str() << " --pipeline=10 --packet-size=64 --thread-num=8" << std::endl
+              << "  " << app_name.c_str()      << " --host=127.0.0.1 --port=9000 --mode=echo --test=pingpong" << std::endl
+              << "  " << leader_spaces.c_str() << " --pipeline=10 --packet-size=64 --thread-num=8" << std::endl
               << std::endl
               << "  " << app_name.c_str() << " -s 127.0.0.1 -p 9000 -m echo -t pingpong -l 10 -k 64 -n 8" << std::endl;
     std::cerr << std::endl;
@@ -156,46 +153,48 @@ void print_usage(const std::string & app_name, const app_opts::options_descripti
 
 int main(int argc, char * argv[])
 {
-    std::string app_name, test_mode, test_method, rpc_topic;
+    std::string app_name;
+    std::string test_mode, test_method, rpc_topic;
     std::string server_ip, server_port;
     std::string mode, test, cmd, cmd_value;
     int32_t pipeline = 1, packet_size = 0, thread_num = 0, test_time = 30, need_echo = 1;
 
-    app_name = get_app_name(argv[0]);
-
-    app_opts::options_description desc("Command list");
+    namespace options = boost::program_options;
+    options::options_description desc("Command list");
     desc.add_options()
         ("help,h",                                                                                      "usage info")
-        ("host,s",          app_opts::value<std::string>(&server_ip)->default_value("127.0.0.1"),       "server host or ip address")
-        ("port,p",          app_opts::value<std::string>(&server_port)->default_value("9000"),          "server port")
-        ("mode,m",          app_opts::value<std::string>(&test_mode)->default_value("echo"),            "test mode = [echo]")
-        ("test,t",          app_opts::value<std::string>(&test_method)->default_value("pingpong"),      "test method = [pingpong, qps, latency, throughput]")
-        ("pipeline,l",      app_opts::value<int32_t>(&pipeline)->default_value(1),                      "pipeline numbers")
-        ("packet-size,k",   app_opts::value<int32_t>(&packet_size)->default_value(64),                  "packet size")
-        ("thread-num,n",    app_opts::value<int32_t>(&thread_num)->default_value(1),                    "thread numbers")
-        ("test-time,i",     app_opts::value<int32_t>(&test_time)->default_value(30),                    "total test time (seconds)")
-        ("echo,e",          app_opts::value<int32_t>(&need_echo)->default_value(1),                     "whether the server need echo")
+        ("host,s",          options::value<std::string>(&server_ip)->default_value("127.0.0.1"),        "server host or ip address")
+        ("port,p",          options::value<std::string>(&server_port)->default_value("9000"),           "server port")
+        ("mode,m",          options::value<std::string>(&test_mode)->default_value("echo"),             "test mode = [echo]")
+        ("test,t",          options::value<std::string>(&test_method)->default_value("pingpong"),       "test method = [pingpong, qps, latency, throughput]")
+        ("pipeline,l",      options::value<int32_t>(&pipeline)->default_value(1),                       "pipeline numbers")
+        ("packet-size,k",   options::value<int32_t>(&packet_size)->default_value(64),                   "packet size")
+        ("thread-num,n",    options::value<int32_t>(&thread_num)->default_value(1),                     "thread numbers")
+        ("test-time,i",     options::value<int32_t>(&test_time)->default_value(30),                     "total test time (seconds)")
+        ("echo,e",          options::value<int32_t>(&need_echo)->default_value(1),                      "whether the server need echo")
         ;
 
     // parse command line
-    app_opts::variables_map vars_map;
+    options::variables_map args_map;
     try {
-        app_opts::store(app_opts::parse_command_line(argc, argv, desc), vars_map);
+        options::store(options::parse_command_line(argc, argv, desc), args_map);
     }
-    catch (const std::exception & e) {
-        std::cout << "Exception is: " << e.what() << std::endl;
+    catch (const std::exception & ex) {
+        std::cout << "Exception is: " << ex.what() << std::endl;
     }
-    app_opts::notify(vars_map);
+    options::notify(args_map);
+
+    app_name = get_app_name(argv[0]);
 
     // help
-    if (vars_map.count("help") > 0) {
+    if (args_map.count("help") > 0) {
         print_usage(app_name, desc);
         exit(EXIT_FAILURE);
     }
 
     // host
-    if (vars_map.count("host") > 0) {
-        server_ip = vars_map["host"].as<std::string>();
+    if (args_map.count("host") > 0) {
+        server_ip = args_map["host"].as<std::string>();
     }
     std::cout << "host: " << server_ip.c_str() << std::endl;
     if (!is_valid_ip_v4(server_ip)) {
@@ -204,8 +203,8 @@ int main(int argc, char * argv[])
     }
 
     // port
-    if (vars_map.count("port") > 0) {
-        server_port = vars_map["port"].as<std::string>();
+    if (args_map.count("port") > 0) {
+        server_port = args_map["port"].as<std::string>();
     }
     std::cout << "port: " << server_port.c_str() << std::endl;
     if (!is_socket_port(server_port)) {
@@ -217,8 +216,8 @@ int main(int argc, char * argv[])
     g_test_mode = test_mode_unknown;
     g_test_mode_str = "echo";
 
-    if (vars_map.count("mode") > 0) {
-        test_mode = vars_map["mode"].as<std::string>();
+    if (args_map.count("mode") > 0) {
+        test_mode = args_map["mode"].as<std::string>();
     }
     g_test_mode_str = test_mode;
     std::cout << "test mode: " << test_mode.c_str() << std::endl;
@@ -235,8 +234,8 @@ int main(int argc, char * argv[])
     g_test_method = test_method_unknown;
     g_test_method_str = "pingpong";
 
-    if (vars_map.count("test") > 0) {
-        test_method = vars_map["test"].as<std::string>();
+    if (args_map.count("test") > 0) {
+        test_method = args_map["test"].as<std::string>();
     }
     std::cout << "test mode: " << test_method.c_str() << std::endl;
     g_test_method_str = test_method;
@@ -259,16 +258,16 @@ int main(int argc, char * argv[])
     }
 
     // pipeline
-    if (vars_map.count("pipeline") > 0) {
-        pipeline = vars_map["pipeline"].as<int32_t>();
+    if (args_map.count("pipeline") > 0) {
+        pipeline = args_map["pipeline"].as<int32_t>();
         std::cout << "pipeline: " << pipeline << std::endl;
     }
     if (pipeline <= 0)
         pipeline = 1;
 
     // packet-size
-    if (vars_map.count("packet-size") > 0) {
-        packet_size = vars_map["packet-size"].as<int32_t>();
+    if (args_map.count("packet-size") > 0) {
+        packet_size = args_map["packet-size"].as<int32_t>();
     }
     std::cout << "packet-size: " << packet_size << std::endl;
     if (packet_size <= 0)
@@ -280,8 +279,8 @@ int main(int argc, char * argv[])
     }
 
     // thread-num
-    if (vars_map.count("thread-num") > 0) {
-        thread_num = vars_map["thread-num"].as<int32_t>();
+    if (args_map.count("thread-num") > 0) {
+        thread_num = args_map["thread-num"].as<int32_t>();
     }
     std::cout << "thread-num: " << thread_num << std::endl;
     if (thread_num <= 0) {
@@ -290,8 +289,8 @@ int main(int argc, char * argv[])
     }
 
     // test-time
-    if (vars_map.count("test-time") > 0) {
-        test_time = vars_map["test-time"].as<int32_t>();
+    if (args_map.count("test-time") > 0) {
+        test_time = args_map["test-time"].as<int32_t>();
     }
     std::cout << "test-time: " << test_time << std::endl;
     if (test_time <= 0) {
@@ -300,8 +299,8 @@ int main(int argc, char * argv[])
     }
 
     // need_echo
-    if (vars_map.count("echo") > 0) {
-        need_echo = vars_map["echo"].as<int32_t>();
+    if (args_map.count("echo") > 0) {
+        need_echo = args_map["echo"].as<int32_t>();
     }
     std::cout << "need_echo: " << need_echo << std::endl;
 

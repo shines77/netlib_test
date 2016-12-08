@@ -6,8 +6,8 @@
 #  endif
 #endif
 
-#ifdef _MSC_VER
-  #define BOOST_ASIO_MSVC _MSC_VER
+#if defined(_MSC_VER)
+  #define BOOST_ASIO_MSVC   _MSC_VER
 #endif
 
 #if defined(BOOST_ASIO_MSVC)

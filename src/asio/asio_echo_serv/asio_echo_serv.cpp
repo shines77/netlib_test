@@ -208,7 +208,8 @@ void print_usage(const std::string & app_name, const boost::program_options::opt
 
 int main(int argc, char * argv[])
 {
-    std::string app_name, test_mode, test_method, nodelay, rpc_topic;
+    std::string app_name;
+    std::string test_mode, test_method, nodelay, rpc_topic;
     std::string server_ip, server_port;
     std::string mode, test, cmd, cmd_value;
     int32_t pipeline = 1, packet_size = 0, thread_num = 0, need_echo = 1;
@@ -229,25 +230,26 @@ int main(int argc, char * argv[])
         ;
 
     // parse command line
-    options::variables_map vars_map;
+    options::variables_map args_map;
     try {
-        options::store(options::parse_command_line(argc, argv, desc), vars_map);
+        options::store(options::parse_command_line(argc, argv, desc), args_map);
     }
     catch (const std::exception & ex) {
         std::cout << "Exception is: " << ex.what() << std::endl;
     }
-    options::notify(vars_map);
+    options::notify(args_map);
+
+    app_name = get_app_name(argv[0]);
 
     // help
-    if (vars_map.count("help") > 0) {
-        std::string app_name = get_app_name(argv[0]);
+    if (args_map.count("help") > 0) {
         print_usage(app_name, desc);
         exit(EXIT_FAILURE);
     }
 
     // host
-    if (vars_map.count("host") > 0) {
-        server_ip = vars_map["host"].as<std::string>();
+    if (args_map.count("host") > 0) {
+        server_ip = args_map["host"].as<std::string>();
     }
     std::cout << "host: " << server_ip.c_str() << std::endl;
     if (!is_valid_ip_v4(server_ip)) {
@@ -256,8 +258,8 @@ int main(int argc, char * argv[])
     }
 
     // port
-    if (vars_map.count("port") > 0) {
-        server_port = vars_map["port"].as<std::string>();
+    if (args_map.count("port") > 0) {
+        server_port = args_map["port"].as<std::string>();
     }
     std::cout << "port: " << server_port.c_str() << std::endl;
     if (!is_socket_port(server_port)) {
@@ -266,8 +268,8 @@ int main(int argc, char * argv[])
     }
 
     // mode
-    if (vars_map.count("mode") > 0) {
-        test_mode = vars_map["mode"].as<std::string>();
+    if (args_map.count("mode") > 0) {
+        test_mode = args_map["mode"].as<std::string>();
     }
     if (test_mode == "http") {
         g_test_mode = test_mode_http_server;
@@ -287,15 +289,15 @@ int main(int argc, char * argv[])
     std::cout << "test mode: " << g_test_mode_str.c_str() << std::endl;
 
     // test
-    if (vars_map.count("test") > 0) {
-        test_method = vars_map["test"].as<std::string>();
+    if (args_map.count("test") > 0) {
+        test_method = args_map["test"].as<std::string>();
     }
     g_test_method_str = test_method;
     std::cout << "test method: " << test_method.c_str() << std::endl;
 
     // packet-size
-    if (vars_map.count("packet-size") > 0) {
-        packet_size = vars_map["packet-size"].as<int32_t>();
+    if (args_map.count("packet-size") > 0) {
+        packet_size = args_map["packet-size"].as<int32_t>();
     }
     std::cout << "packet-size: " << packet_size << std::endl;
     if (packet_size <= 0)
@@ -308,8 +310,8 @@ int main(int argc, char * argv[])
     g_packet_size = packet_size;
 
     // thread-num
-    if (vars_map.count("thread-num") > 0) {
-        thread_num = vars_map["thread-num"].as<int32_t>();
+    if (args_map.count("thread-num") > 0) {
+        thread_num = args_map["thread-num"].as<int32_t>();
     }
     std::cout << "thread-num: " << thread_num << std::endl;
     if (thread_num <= 0) {
@@ -318,8 +320,8 @@ int main(int argc, char * argv[])
     }
 
     // nodelay
-    if (vars_map.count("nodelay") > 0) {
-        nodelay = vars_map["nodelay"].as<std::string>();
+    if (args_map.count("nodelay") > 0) {
+        nodelay = args_map["nodelay"].as<std::string>();
     }
     if (nodelay == "1" || nodelay == "true") {
         g_nodelay = 1;
@@ -333,8 +335,8 @@ int main(int argc, char * argv[])
 
     // need_echo
     need_echo = 1;
-    if (vars_map.count("echo") > 0) {
-        need_echo = vars_map["echo"].as<int32_t>();
+    if (args_map.count("echo") > 0) {
+        need_echo = args_map["echo"].as<int32_t>();
     }
     std::cout << "need_echo: " << need_echo << std::endl;
     g_need_echo =  need_echo;
