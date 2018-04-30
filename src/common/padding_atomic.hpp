@@ -82,8 +82,7 @@ struct padding_data_impl<T, CacheLineSize, false> : public base_padding_data
 };
 
 template <typename T, std::size_t CacheLineSize = CACHE_LINE_SIZE>
-struct padding_data : public padding_data_impl<
-                             T, CacheLineSize, detail::is_inheritable<T>::value> {};
+struct padding_data : public padding_data_impl<T, CacheLineSize, detail::is_inheritable<T>::value> {};
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
@@ -128,8 +127,7 @@ struct volatile_padding_data_impl<T, CacheLineSize, false> : public base_padding
 };
 
 template <typename T, std::size_t CacheLineSize = CACHE_LINE_SIZE>
-struct volatile_padding_data : public volatile_padding_data_impl<
-                                      T, CacheLineSize, detail::is_inheritable<T>::value> {};
+struct volatile_padding_data : public volatile_padding_data_impl<T, CacheLineSize, detail::is_inheritable<T>::value> {};
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
@@ -180,4 +178,4 @@ struct padding_atomic_wrapper : public base_padding_data
 
 #pragma pack(pop)
 
-#undef CACHELINE_SIZE
+#undef CACHE_LINE_SIZE
