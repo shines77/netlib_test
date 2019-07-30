@@ -60,11 +60,12 @@ public:
 
     void stop(bool delete_self = false)
     {
+#if !defined(_WIN32_WINNT) || (_WIN32_WINNT >= 0x0600)
+        socket_.cancel();
+#endif
+
         //socket_.shutdown(socket_base::shutdown_both);
         if (socket_.is_open()) {
-#if !defined(_WIN32_WINNT) || (_WIN32_WINNT >= 0x0600)
-            socket_.cancel();
-#endif
             socket_.close();
 
             if (g_client_count.load() != 0)

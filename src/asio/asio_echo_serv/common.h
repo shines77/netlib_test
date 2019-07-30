@@ -22,7 +22,8 @@ extern std::string g_rpc_topic;
 
 extern std::string g_server_ip;
 extern std::string g_server_port;
-extern time_point<steady_clock> g_start_time_;
+extern bool g_first_time;
+extern time_point<steady_clock> g_start_time;
 
 namespace asio_test {
 

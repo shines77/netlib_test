@@ -203,11 +203,12 @@ private:
 
     void stop(bool delete_self = false)
     {
+#if !defined(_WIN32_WINNT) || (_WIN32_WINNT >= 0x0600)
+        socket_.cancel();
+#endif
+
         //socket_.shutdown(socket_base::shutdown_both);
         if (socket_.is_open()) {
-#if !defined(_WIN32_WINNT) || (_WIN32_WINNT >= 0x0600)
-            socket_.cancel();
-#endif
             socket_.close();
         }
 
@@ -324,6 +325,7 @@ private:
                     std::cout << "test_http_client::do_sync_read_only(): async_read_some(), recieved_bytes = "
                               << recieved_bytes << " bytes." << std::endl;
                 }
+
                 if (!ec)
                 {
                     // Have recieved the response message
@@ -356,6 +358,7 @@ private:
                     std::cout << "test_http_client::do_write(): async_write(), send_bytes = "
                               << send_bytes << " bytes." << std::endl;
                 }
+
                 if (!ec)
                 {
                     send_bytes_ += (uint32_t)send_bytes;
@@ -382,6 +385,7 @@ private:
                     std::cout << "test_http_client::do_write(): async_write(), send_bytes = "
                               << send_bytes << " bytes." << std::endl;
                 }
+
                 if (!ec)
                 {
                     send_bytes_ += (uint32_t)send_bytes;

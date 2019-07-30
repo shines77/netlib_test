@@ -87,7 +87,6 @@ public:
     {
         if (acceptor_.is_open()) {
             acceptor_.cancel();
-            acceptor_.close();
         }
     }
 

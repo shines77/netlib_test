@@ -38,7 +38,8 @@ asio_test::aligned_atomic<uint32_t> asio_test::g_client_count(0);
 asio_test::aligned_atomic<uint64_t> asio_test::g_recv_bytes(0);
 asio_test::aligned_atomic<uint64_t> asio_test::g_send_bytes(0);
 
-time_point<steady_clock> g_start_time_ = high_resolution_clock::now();
+bool                     g_first_time = true;
+time_point<steady_clock> g_start_time = high_resolution_clock::now();
 
 static const size_t kBytes = 8;
 
@@ -161,7 +162,7 @@ void run_asio_http_server(const std::string & ip, const std::string & port,
             auto client_count = (uint32_t)g_client_count;
             auto qps = (cur_succeed_count - last_query_count);
             packet_size = g_packet_size;
-            elapsed_time_ = duration_cast< duration<double> >(high_resolution_clock::now() - g_start_time_);
+            elapsed_time_ = duration_cast< duration<double> >(high_resolution_clock::now() - g_start_time);
             double total_time = elapsed_time_.count();
             std::cout << ip.c_str() << ":" << port.c_str() << " - " << packet_size << " bytes : "
                       << thread_num << " threads : "

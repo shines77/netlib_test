@@ -5,6 +5,7 @@
 #include <memory>
 #include <utility>
 #include <atomic>
+#include <set>
 #include <algorithm>
 #include <boost/asio.hpp>
 #include <boost/system/error_code.hpp>
@@ -210,12 +211,18 @@ public:
     }
 };
 
-class asio_http_session : public boost::enable_shared_from_this<asio_http_session>,
+class connection_manager;
+
+class asio_http_session : public std::enable_shared_from_this<asio_http_session>,
                           private boost::noncopyable {
 private:
     enum { PACKET_SIZE = MAX_PACKET_SIZE };
 
+    /// Socket for the connection.
     ip::tcp::socket socket_;
+    /// The manager for this connection.
+    connection_manager * connection_manager_;
+
     bool        nodelay_;
     uint32_t    need_echo_;
     uint32_t    buffer_size_;
@@ -236,9 +243,10 @@ private:
     http_ring_buffer buffer_;
 
 public:
-    asio_http_session(boost::asio::io_service & io_service, uint32_t buffer_size,
+    asio_http_session(boost::asio::io_service & io_service, connection_manager * manager, uint32_t buffer_size,
                       uint32_t packet_size, uint32_t need_echo = mode_need_echo)
-        : socket_(io_service), nodelay_(false), need_echo_(need_echo), buffer_size_(buffer_size), packet_size_(packet_size),
+        : socket_(io_service), connection_manager_(manager), nodelay_(false), need_echo_(need_echo),
+          buffer_size_(buffer_size), packet_size_(packet_size),
           recv_counter_(0), send_counter_(0), recv_bytes_(0), send_bytes_(0), recv_cnt_(0), send_cnt_(0),
           delta_recv_count_(0), delta_send_count_(0), recv_bytes_remain_(0), send_bytes_remain_(0), buffer_(buffer_size)
     {
@@ -251,7 +259,6 @@ public:
 
     ~asio_http_session()
     {
-        stop(false);
     }
 
     void start()
@@ -273,27 +280,40 @@ public:
 
         g_client_count++;
 
-        g_start_time_ = high_resolution_clock::now();
+        if (g_first_time) {
+            g_first_time = false;
+            g_start_time = high_resolution_clock::now();
+        }
+
+        start_connection();
 
         do_read_some();
     }
 
-    void stop(bool delete_self = false)
+    void stop(bool delete_self)
     {
+        if (socket_.native_handle()) {
 #if !defined(_WIN32_WINNT) || (_WIN32_WINNT >= 0x0600)
-        socket_.cancel();
+            //socket_.cancel();
 #endif
-
-        //socket_.shutdown(socket_base::shutdown_both);
-        if (socket_.is_open()) {
             socket_.close();
 
             if (g_client_count.load() != 0)
                 g_client_count--;
-        }
 
-        if (delete_self)
-            delete this;
+            if (delete_self)
+                delete this;
+        }
+    }
+
+    void start_connection();
+    void stop_connection(const boost::system::error_code & ec);
+
+    void init_shutdown()
+    {
+        // Initiate graceful connection closure.
+        //boost::system::error_code ignored_ec;
+        //socket_.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignored_ec);
     }
 
     ip::tcp::socket & socket()
@@ -302,8 +322,8 @@ public:
     }
 
     static boost::shared_ptr<asio_http_session> create_new(
-        boost::asio::io_service & io_service, uint32_t buffer_size, uint32_t packet_size) {
-        return boost::shared_ptr<asio_http_session>(new asio_http_session(io_service, buffer_size, packet_size, g_test_mode));
+        boost::asio::io_service & io_service, connection_manager * conn_manager, uint32_t buffer_size, uint32_t packet_size) {
+        return boost::shared_ptr<asio_http_session>(new asio_http_session(io_service, conn_manager, buffer_size, packet_size, g_test_mode));
     }
 
 private:
@@ -462,7 +482,8 @@ private:
                     // Write error log
                     std::cout << "asio_http_session::do_read() - Error: (code = " << ec.value() << ") "
                               << ec.message().c_str() << std::endl;
-                    stop(true);
+
+                    stop_connection(ec);
                 }
             }
         );
@@ -474,6 +495,8 @@ private:
             [this](const boost::system::error_code & ec, std::size_t send_bytes)
             {
                 if (!ec) {
+                    init_shutdown();
+
                     // Count the sent bytes
                     do_send_counter((uint32_t)send_bytes);
 
@@ -491,7 +514,8 @@ private:
                     // Write error log
                     std::cout << "asio_http_session::do_write() - Error: (code = " << ec.value() << ") "
                               << ec.message().c_str() << std::endl;
-                    stop(true);
+
+                    stop_connection(ec);
                 }
             }
         );
@@ -574,12 +598,12 @@ private:
                 }
                 else {
                     // Write error log
-#if 0
+#if 1
                     std::cout << "asio_http_session::do_read_some() - Error: (recv_bytes = " << recv_bytes
                               << ", code = " << ec.value() << ") "
                               << ec.message().c_str() << std::endl;
 #endif
-                    stop(true);
+                    stop_connection(ec);
                 }
             }
         );
@@ -593,6 +617,7 @@ private:
             boost::asio::buffer(g_response_html.c_str(), g_response_html.size()),
             ec);
         if (!ec) {
+            init_shutdown();
 #if 0
             if (is_first_read) {
                 std::cout << "g_response_html.size() = " << g_response_html.size() << std::endl;
@@ -617,7 +642,8 @@ private:
             std::cout << "asio_http_session::do_sync_write_http_response() - Error: (send_bytes = " << send_bytes
                         << ", code = " << ec.value() << ") "
                         << ec.message().c_str() << std::endl;
-            stop(true);
+
+            stop_connection(ec);
         }
     }
 
@@ -628,6 +654,7 @@ private:
             [this](const boost::system::error_code & ec, std::size_t send_bytes)
             {
                 if (!ec) {
+                    init_shutdown();
 #if 0
                     if (is_first_read) {
                         std::cout << "g_response_html.size() = " << g_response_html.size() << std::endl;
@@ -652,7 +679,8 @@ private:
                     std::cout << "asio_http_session::do_async_write_http_response() - Error: (send_bytes = " << send_bytes
                               << ", code = " << ec.value() << ") "
                               << ec.message().c_str() << std::endl;
-                    stop(true);
+
+                    stop_connection(ec);
                 }
             }
         );
@@ -665,6 +693,7 @@ private:
             [this](const boost::system::error_code & ec, std::size_t send_bytes)
             {
                 if (!ec) {
+                    init_shutdown();
 #if 0
                     if (is_first_read) {
                         std::cout << "g_response_html.size() = " << g_response_html.size() << std::endl;
@@ -689,7 +718,8 @@ private:
                     std::cout << "asio_http_session::do_async_write_http_response_some() - Error: (send_bytes = " << send_bytes
                               << ", code = " << ec.value() << ") "
                               << ec.message().c_str() << std::endl;
-                    stop(true);
+
+                    stop_connection(ec);
                 }
             }
         );
@@ -709,6 +739,8 @@ private:
                 [this, buffer_size](const boost::system::error_code & ec, std::size_t send_bytes)
                 {
                     if (!ec) {
+                        init_shutdown();
+
                         // Count the sent bytes
                         do_send_counter((uint32_t)send_bytes);
 
@@ -727,7 +759,8 @@ private:
                         std::cout << "asio_http_session::do_write_some() - Error: (send_bytes = " << send_bytes
                                   << ", code = " << ec.value() << ") "
                                   << ec.message().c_str() << std::endl;
-                        stop(true);
+
+                        stop_connection(ec);
                     }
                 }
             );
@@ -737,6 +770,8 @@ private:
                 [this, buffer_size](const boost::system::error_code & ec, std::size_t send_bytes)
                 {
                     if (!ec) {
+                        init_shutdown();
+
                         // Count the sent bytes
                         do_send_counter((uint32_t)send_bytes);
 
@@ -754,7 +789,8 @@ private:
                         // Write error log
                         std::cout << "asio_http_session::do_write() - Error: (code = " << ec.value() << ") "
                                   << ec.message().c_str() << std::endl;
-                        stop(true);
+
+                        stop_connection(ec);
                     }
                 }
             );
@@ -763,6 +799,59 @@ private:
         }
     }
 };
+
+typedef std::shared_ptr<asio_http_session> connection_ptr;
+
+//
+// See: https://www.boost.org/doc/libs/1_48_0/doc/html/boost_asio/example/http/server/connection.hpp
+//
+
+/// Manages open connections so that they may be cleanly stopped when the server
+/// needs to shut down.
+class connection_manager : private boost::noncopyable
+{
+private:
+    /// The managed connections.
+    std::set<connection_ptr> connections_;
+
+public:
+    /// Add the specified connection to the manager and start it.
+    void connection_manager::start(connection_ptr connection)
+    {
+        connections_.insert(connection);
+        //connection->start();
+    }
+
+    /// Stop the specified connection.
+    void connection_manager::stop(connection_ptr connection)
+    {
+        connections_.erase(connection);
+        connection->stop(false);
+    }
+
+    /// Stop all connections.
+    void connection_manager::stop_all()
+    {
+        std::for_each(connections_.begin(), connections_.end(), std::bind(&asio_http_session::stop, std::placeholders::_1, false));
+        connections_.clear();
+    }
+};
+
+void asio_http_session::start_connection()
+{
+    //if (connection_manager_)
+    //    connection_manager_->start(asio_http_session::shared_from_this());
+}
+
+void asio_http_session::stop_connection(const boost::system::error_code & ec)
+{
+    if (ec != boost::asio::error::operation_aborted)
+    {
+        //if (connection_manager_)
+        //    connection_manager_->stop(asio_http_session::shared_from_this());
+        stop(false);
+    }
+}
 
 } // namespace asio_test
 

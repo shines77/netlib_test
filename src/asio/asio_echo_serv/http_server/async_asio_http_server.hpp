@@ -22,11 +22,12 @@ namespace asio_test {
 //
 // See: http://www.boost.org/doc/libs/1_36_0/doc/html/boost_asio/example/echo/async_tcp_echo_server.cpp
 //
-class async_asio_http_server : public boost::enable_shared_from_this<async_asio_http_server>,
+class async_asio_http_server : public std::enable_shared_from_this<async_asio_http_server>,
                                private boost::noncopyable
 {
 private:
     io_service_pool					    io_service_pool_;
+    connection_manager                  connection_manager_;
     boost::asio::ip::tcp::acceptor	    acceptor_;
     std::shared_ptr<asio_http_session>	session_;
     std::shared_ptr<std::thread>	    thread_;
@@ -56,6 +57,7 @@ public:
 
     ~async_asio_http_server()
     {
+        connection_manager_.stop_all();
         this->stop();
     }
 
@@ -85,10 +87,7 @@ public:
 
     void stop()
     {
-        if (acceptor_.is_open()) {
-            acceptor_.cancel();
-            acceptor_.close();
-        }
+        acceptor_.cancel();
     }
 
     void run()
@@ -116,7 +115,7 @@ private:
             std::cout << "async_asio_http_server::handle_accept() - Error: (code = " << ec.value() << ") "
                       << ec.message().c_str() << std::endl;
             if (session) {
-                session->stop();
+                session->stop(false);
                 delete session;
             }
         }        
@@ -124,14 +123,16 @@ private:
 
     void do_accept()
     {
-        asio_http_session * new_session = new asio_http_session(io_service_pool_.get_io_service(), buffer_size_, packet_size_, g_test_mode);
+        asio_http_session * new_session = new asio_http_session(io_service_pool_.get_io_service(),
+                                                                &connection_manager_, buffer_size_, packet_size_, g_test_mode);
         acceptor_.async_accept(new_session->socket(), boost::bind(&async_asio_http_server::handle_accept,
-            this, boost::asio::placeholders::error, new_session));
+                               this, boost::asio::placeholders::error, new_session));
     }
 
     void do_accept_lambda()
     {
-        session_.reset(new asio_http_session(io_service_pool_.get_io_service(), buffer_size_, packet_size_, g_test_mode));
+        session_.reset(new asio_http_session(io_service_pool_.get_io_service(), &connection_manager_,
+                                             buffer_size_, packet_size_, g_test_mode));
         acceptor_.async_accept(session_->socket(),
             [this](const boost::system::error_code & ec)
             {
@@ -142,7 +143,7 @@ private:
                     // Accept error
                     std::cout << "async_asio_http_server::handle_accept_lambda() - Error: (code = " << ec.value() << ") "
                               << ec.message().c_str() << std::endl;
-                    session_->stop();
+                    session_->stop(false);
                     session_.reset();
                 }
 
