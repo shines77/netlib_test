@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <string>
 #include <atomic>
-#include "common/padding_atomic.hpp"
+#include "common/aligned_atomic.hpp"
 
 extern uint32_t g_test_mode;
 extern uint32_t g_test_method;
@@ -47,11 +47,11 @@ enum test_method_t {
     test_method_default = -1
 };
 
-extern padding_atomic<uint64_t> g_query_count;
-extern padding_atomic<uint32_t> g_client_count;
+extern aligned_atomic<uint64_t> g_query_count;
+extern aligned_atomic<uint32_t> g_client_count;
 
-extern padding_atomic<uint64_t> g_recv_bytes;
-extern padding_atomic<uint64_t> g_send_bytes;
+extern aligned_atomic<uint64_t> g_recv_bytes;
+extern aligned_atomic<uint64_t> g_send_bytes;
 
 extern const std::string g_response_html;
 

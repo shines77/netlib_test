@@ -31,9 +31,6 @@
     <ClInclude Include="..\..\..\src\common\cmd_utils.hpp">
       <Filter>src\common</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\common\padding_atomic.hpp">
-      <Filter>src\common</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\asio\asio_echo_client\test_pingpong_client.hpp">
       <Filter>src</Filter>
     </ClInclude>
@@ -42,6 +39,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\src\asio\asio_echo_client\test_http_client.hpp">
       <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\common\aligned_atomic.hpp">
+      <Filter>src\common</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

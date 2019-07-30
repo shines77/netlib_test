@@ -66,7 +66,7 @@ public:
 
     ~asio_session()
     {
-        stop();
+        stop(false);
     }
 
     void start()
@@ -427,7 +427,7 @@ private:
                     }
                     else {
                         // Write error log
-                        std::cout << "asio_session::do_write() - Error: (code = " << ec.value() << ") "
+                        std::cout << "asio_session::do_write_some() - Error: (code = " << ec.value() << ") "
                                   << ec.message().c_str() << std::endl;
                         stop(true);
                     }

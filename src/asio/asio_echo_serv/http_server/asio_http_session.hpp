@@ -68,8 +68,9 @@ public:
 private:
     void init_ring_buffer(std::size_t buffer_size) {
         char * newBuffer = new (std::nothrow) char [buffer_size * 2];
-        if (newBuffer)
+        if (newBuffer) {
             ::memset(newBuffer, 0, buffer_size * 2 * sizeof(char));
+        }
         buffer_.reset(newBuffer);
 
         char * _bottom = buffer_.get();

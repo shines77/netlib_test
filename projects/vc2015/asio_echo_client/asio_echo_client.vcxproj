@@ -172,7 +172,7 @@
     <ClInclude Include="..\..\..\src\asio\asio_echo_client\test_latency_client.hpp" />
     <ClInclude Include="..\..\..\src\asio\asio_echo_client\test_qps_client.hpp" />
     <ClInclude Include="..\..\..\src\common\cmd_utils.hpp" />
-    <ClInclude Include="..\..\..\src\common\padding_atomic.hpp" />
+    <ClInclude Include="..\..\..\src\common\aligned_atomic.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

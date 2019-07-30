@@ -174,8 +174,8 @@
     <ClInclude Include="..\..\..\src\asio\asio_echo_serv\http_server\asio_http_session.hpp" />
     <ClInclude Include="..\..\..\src\asio\asio_echo_serv\http_server\async_asio_http_server.hpp" />
     <ClInclude Include="..\..\..\src\asio\asio_echo_serv\io_service_pool.hpp" />
+    <ClInclude Include="..\..\..\src\common\aligned_atomic.hpp" />
     <ClInclude Include="..\..\..\src\common\cmd_utils.hpp" />
-    <ClInclude Include="..\..\..\src\common\padding_atomic.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

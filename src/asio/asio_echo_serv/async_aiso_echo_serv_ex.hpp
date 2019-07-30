@@ -47,8 +47,8 @@ public:
     async_asio_echo_serv_ex(short port, uint32_t buffer_size = 32768,
         uint32_t packet_size = 64,
         uint32_t pool_size = std::thread::hardware_concurrency())
-        : io_service_pool_(pool_size),
-          acceptor_(io_service_pool_.get_first_io_service(), ip::tcp::endpoint(ip::tcp::v4(), port)),
+        : io_service_pool_(pool_size), acceptor_(io_service_pool_.get_first_io_service(),
+          ip::tcp::endpoint(ip::tcp::v4(), port)),
           buffer_size_(buffer_size), packet_size_(packet_size)
     {
         do_accept();
@@ -126,7 +126,7 @@ private:
     {
         asio_session * new_session = new asio_session(io_service_pool_.get_io_service(), buffer_size_, packet_size_, g_test_mode);
         acceptor_.async_accept(new_session->socket(), boost::bind(&async_asio_echo_serv_ex::handle_accept,
-            this, boost::asio::placeholders::error, new_session));
+                               this, boost::asio::placeholders::error, new_session));
     }
 
     void do_accept_lambda()
@@ -140,7 +140,7 @@ private:
                 }
                 else {
                     // Accept error
-                    std::cout << "async_asio_echo_serv_ex::handle_accept2() - Error: (code = " << ec.value() << ") "
+                    std::cout << "async_asio_echo_serv_ex::handle_accept_lambda() - Error: (code = " << ec.value() << ") "
                               << ec.message().c_str() << std::endl;
                     session_->stop();
                     session_.reset();

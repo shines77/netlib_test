@@ -32,19 +32,19 @@ struct is_inheritable : std::integral_constant<bool,
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
-struct base_padding_data {};
+struct base_aligned_data {};
 
 template <typename T>
-struct is_padding_data
+struct is_aligned_data
 {
-    enum { value = std::is_base_of<T, base_padding_data>::value };
+    enum { value = std::is_base_of<T, base_aligned_data>::value };
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
 template <typename T, std::size_t CacheLineSize, bool isInheritable = true>
 struct alignas(CacheLineSize)
-padding_data_impl : public T, public base_padding_data
+aligned_data_impl : public T, public base_aligned_data
 {
     typedef T value_type;
 
@@ -56,12 +56,12 @@ padding_data_impl : public T, public base_padding_data
     // Cacheline padding
     char padding[kPaddingBytes];
 
-    padding_data_impl(value_type value) : T(value) {};
-    ~padding_data_impl() {};
+    aligned_data_impl(value_type value) : T(value) {};
+    ~aligned_data_impl() {};
 };
 
 template <typename T, std::size_t CacheLineSize>
-struct padding_data_impl<T, CacheLineSize, false> : public base_padding_data
+struct aligned_data_impl<T, CacheLineSize, false> : public base_aligned_data
 {
     typedef typename std::remove_volatile<T>::type _T;
     typedef _T value_type;
@@ -77,18 +77,18 @@ struct padding_data_impl<T, CacheLineSize, false> : public base_padding_data
     // Cacheline padding
     char padding[kPaddingBytes];
 
-    padding_data_impl(value_type value) : data(value) {};
-    ~padding_data_impl() {};
+    aligned_data_impl(value_type value) : data(value) {};
+    ~aligned_data_impl() {};
 };
 
 template <typename T, std::size_t CacheLineSize = CACHE_LINE_SIZE>
-struct padding_data : public padding_data_impl<T, CacheLineSize, detail::is_inheritable<T>::value> {};
+struct aligned_data : public aligned_data_impl<T, CacheLineSize, detail::is_inheritable<T>::value> {};
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
 template <typename T, std::size_t CacheLineSize, bool isInheritable = true>
 struct alignas(CacheLineSize)
-volatile_padding_data_impl : public T, public base_padding_data
+volatile_aligned_data_impl : public T, public base_aligned_data
 {
     typedef typename std::remove_volatile<T>::type _T;
     typedef volatile _T value_type;
@@ -101,12 +101,12 @@ volatile_padding_data_impl : public T, public base_padding_data
     // Cacheline padding
     char padding[kPaddingBytes];
 
-    volatile_padding_data_impl(_T value) : T(value) {};
-    ~volatile_padding_data_impl() {};
+    volatile_aligned_data_impl(_T value) : T(value) {};
+    ~volatile_aligned_data_impl() {};
 };
 
 template <typename T, std::size_t CacheLineSize>
-struct volatile_padding_data_impl<T, CacheLineSize, false> : public base_padding_data
+struct volatile_aligned_data_impl<T, CacheLineSize, false> : public base_aligned_data
 {
     typedef typename std::remove_volatile<T>::type _T;
     typedef volatile _T value_type;
@@ -122,19 +122,19 @@ struct volatile_padding_data_impl<T, CacheLineSize, false> : public base_padding
     // Cacheline padding
     char padding[kPaddingBytes];
 
-    volatile_padding_data_impl(value_type value) : data(value) {};
-    ~volatile_padding_data_impl() {};
+    volatile_aligned_data_impl(value_type value) : data(value) {};
+    ~volatile_aligned_data_impl() {};
 };
 
 template <typename T, std::size_t CacheLineSize = CACHE_LINE_SIZE>
-struct volatile_padding_data : public volatile_padding_data_impl<T, CacheLineSize, detail::is_inheritable<T>::value> {};
+struct volatile_aligned_data : public volatile_aligned_data_impl<T, CacheLineSize, detail::is_inheritable<T>::value> {};
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
 template <typename T, std::size_t CacheLineSize = CACHE_LINE_SIZE>
 struct alignas(CacheLineSize)
-padding_atomic : public std::atomic<typename std::remove_volatile<T>::type>,
-                 public base_padding_data
+aligned_atomic : public std::atomic<typename std::remove_volatile<T>::type>,
+                 public base_aligned_data
 {
     typedef typename std::remove_volatile<T>::type _T;
     typedef std::atomic<_T> value_type;
@@ -147,12 +147,12 @@ padding_atomic : public std::atomic<typename std::remove_volatile<T>::type>,
     // Cacheline padding
     char padding[kPaddingBytes];
 
-    padding_atomic(_T val) : std::atomic<typename std::remove_volatile<T>::type>(val) {};
-    ~padding_atomic() {};
+    aligned_atomic(_T val) : std::atomic<typename std::remove_volatile<T>::type>(val) {};
+    ~aligned_atomic() {};
 };
 
 template <typename T, std::size_t CacheLineSize = CACHE_LINE_SIZE>
-struct padding_atomic_wrapper : public base_padding_data
+struct aligned_atomic_wrapper : public base_aligned_data
 {
     typedef typename std::remove_volatile<T>::type _T;
     typedef std::atomic<_T> value_type;
@@ -168,8 +168,8 @@ struct padding_atomic_wrapper : public base_padding_data
     // Cacheline padding
     char padding[kPaddingBytes];
 
-    padding_atomic_wrapper(_T value) : data(value) {};
-    ~padding_atomic_wrapper() {};
+    aligned_atomic_wrapper(_T value) : data(value) {};
+    ~aligned_atomic_wrapper() {};
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////

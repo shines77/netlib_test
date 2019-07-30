@@ -13,6 +13,9 @@
 #include "test_http_client.hpp"
 #include "common/cmd_utils.hpp"
 
+using namespace boost::asio;
+using namespace asio_test;
+
 uint32_t g_test_mode      = asio_test::test_mode_echo;
 uint32_t g_test_method    = asio_test::test_method_pingpong;
 
@@ -21,9 +24,6 @@ std::string g_test_method_str   = "pingpong";
 
 std::string g_server_ip;
 std::string g_server_port;
-
-using namespace boost::asio;
-using namespace asio_test;
 
 void run_pingpong_client(const std::string & app_name, const std::string & ip,
     const std::string & port, uint32_t packet_size, uint32_t test_time)

@@ -31,11 +31,11 @@ std::string g_rpc_topic;
 std::string g_server_ip;
 std::string g_server_port;
 
-asio_test::padding_atomic<uint64_t> asio_test::g_query_count(0);
-asio_test::padding_atomic<uint32_t> asio_test::g_client_count(0);
+asio_test::aligned_atomic<uint64_t> asio_test::g_query_count(0);
+asio_test::aligned_atomic<uint32_t> asio_test::g_client_count(0);
 
-asio_test::padding_atomic<uint64_t> asio_test::g_recv_bytes(0);
-asio_test::padding_atomic<uint64_t> asio_test::g_send_bytes(0);
+asio_test::aligned_atomic<uint64_t> asio_test::g_recv_bytes(0);
+asio_test::aligned_atomic<uint64_t> asio_test::g_send_bytes(0);
 
 static const size_t kBytes = 8;
 
