@@ -46,23 +46,31 @@ public:
 
     ~asio_connection()
     {
-#if !defined(_WIN32_WINNT) || (_WIN32_WINNT >= 0x0600)
-        socket_.cancel();
-#endif
-        //socket_.shutdown(socket_base::shutdown_both);
-        socket_.close();
+        stop(false);
     }
 
     void start()
     {
-        g_client_count++;
         //set_socket_recv_bufsize(MAX_PACKET_SIZE);
+
+        g_client_count++;
+
         do_read();
     }
 
     void stop(bool delete_self = false)
     {
-        g_client_count--;
+        //socket_.shutdown(socket_base::shutdown_both);
+        if (socket_.is_open()) {
+#if !defined(_WIN32_WINNT) || (_WIN32_WINNT >= 0x0600)
+            socket_.cancel();
+#endif
+            socket_.close();
+
+            if (g_client_count.load() != 0)
+                g_client_count--;
+        }
+
         if (delete_self)
             delete this;
     }

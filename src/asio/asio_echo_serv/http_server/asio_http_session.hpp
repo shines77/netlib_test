@@ -29,13 +29,13 @@ using namespace boost::asio;
 namespace asio_test {
 
 const std::string g_response_html =
-    "HTTP/1.1 200 OK\r\n"
-    "Date: Fri, 31 Aug 2016 16:25:26 GMT\r\n"
-    "Server: boost-asio\r\n"
-    "Content-Type: text/html\r\n"
-    "Content-Length: 12\r\n"
-    "Connection: Keep-Alive\r\n\r\n"
-    "Hello World!";
+        "HTTP/1.1 200 OK\r\n"
+        "Date: Fri, 31 Aug 2016 16:25:26 GMT\r\n"
+        "Server: boost-asio\r\n"
+        "Content-Type: text/html\r\n"
+        "Content-Length: 12\r\n"
+        "Connection: Keep-Alive\r\n\r\n"
+        "Hello World!";
 
 ////////////////////////////////////////////////////////////////////////////////////
 /*
@@ -235,17 +235,11 @@ public:
 
     ~asio_http_session()
     {
-#if !defined(_WIN32_WINNT) || (_WIN32_WINNT >= 0x0600)
-        socket_.cancel();
-#endif
-        //socket_.shutdown(socket_base::shutdown_both);
-        if (socket_.is_open())
-            socket_.close();
+        stop(false);
     }
 
     void start()
     {
-        g_client_count++;
         set_socket_send_bufsize(MAX_PACKET_SIZE);
         set_socket_recv_bufsize(MAX_PACKET_SIZE);
 
@@ -261,12 +255,24 @@ public:
         sLinger.l_linger = 5;   // After shutdown(), socket send/recv 5 second data yet.
         ::setsockopt(socket_.native_handle(), SOL_SOCKET, SO_LINGER, (const char *)&sLinger, sizeof(sLinger));
 
+        g_client_count++;
+
         do_read_some();
     }
 
     void stop(bool delete_self = false)
     {
-        g_client_count--;
+        //socket_.shutdown(socket_base::shutdown_both);
+        if (socket_.is_open()) {
+#if !defined(_WIN32_WINNT) || (_WIN32_WINNT >= 0x0600)
+            socket_.cancel();
+#endif
+            socket_.close();
+
+            if (g_client_count.load() != 0)
+                g_client_count--;
+        }
+
         if (delete_self)
             delete this;
     }

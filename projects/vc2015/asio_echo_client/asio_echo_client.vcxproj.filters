@@ -40,5 +40,8 @@
     <ClInclude Include="..\..\..\src\asio\asio_echo_client\test_qps_client.hpp">
       <Filter>src</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\asio\asio_echo_client\test_http_client.hpp">
+      <Filter>src</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

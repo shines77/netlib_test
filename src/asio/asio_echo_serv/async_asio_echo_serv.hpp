@@ -25,6 +25,13 @@ namespace asio_test {
 class async_asio_echo_serv : public boost::enable_shared_from_this<async_asio_echo_serv>,
                              private boost::noncopyable
 {
+private:
+    io_service_pool					    io_service_pool_;
+    boost::asio::ip::tcp::acceptor	    acceptor_;
+    std::shared_ptr<asio_connection>    conn_;
+    std::shared_ptr<std::thread>	    thread_;
+    uint32_t					        packet_size_;
+
 public:
     async_asio_echo_serv(const std::string & ip_addr, const std::string & port,
         uint32_t packet_size = 64,
@@ -66,7 +73,10 @@ public:
 
     void stop()
     {
-        acceptor_.cancel();
+        if (acceptor_.is_open()) {
+            acceptor_.cancel();
+            acceptor_.close();
+        }
     }
 
     void run()
@@ -108,7 +118,7 @@ private:
             this, boost::asio::placeholders::error, new_conn));
     }
 
-    void do_accept2()
+    void do_accept_lambda()
     {
         conn_.reset(new asio_connection(io_service_pool_.get_io_service(), packet_size_));
         acceptor_.async_accept(conn_->socket(),
@@ -125,16 +135,9 @@ private:
                     conn_.reset();
                 }
 
-                do_accept2();
+                do_accept_lambda();
             });
     }
-
-private:
-    io_service_pool					    io_service_pool_;
-    boost::asio::ip::tcp::acceptor	    acceptor_;
-    std::shared_ptr<asio_connection>    conn_;
-    std::shared_ptr<std::thread>	    thread_;
-    uint32_t					    packet_size_;
 };
 
 } // namespace asio_test

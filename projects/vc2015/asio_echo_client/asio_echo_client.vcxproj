@@ -165,6 +165,7 @@
     <ClCompile Include="..\..\..\src\asio\asio_echo_client\asio_echo_client.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\src\asio\asio_echo_client\test_http_client.hpp" />
     <ClInclude Include="..\..\..\src\asio\asio_echo_client\test_pingpong_client.hpp" />
     <ClInclude Include="..\..\..\src\asio\asio_echo_client\boost_asio_msvc.h" />
     <ClInclude Include="..\..\..\src\asio\asio_echo_client\common.h" />

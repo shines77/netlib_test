@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <string>
 #include <atomic>
 #include "common/padding_atomic.hpp"
 

@@ -14,6 +14,8 @@
 #include "async_aiso_echo_serv_ex.hpp"
 #include "http_server/async_asio_http_server.hpp"
 
+using namespace asio_test;
+
 uint32_t g_test_mode    = asio_test::test_mode_echo_server;
 uint32_t g_test_method  = asio_test::test_method_pingpong;
 uint32_t g_nodelay      = 0;
@@ -35,7 +37,7 @@ asio_test::padding_atomic<uint32_t> asio_test::g_client_count(0);
 asio_test::padding_atomic<uint64_t> asio_test::g_recv_bytes(0);
 asio_test::padding_atomic<uint64_t> asio_test::g_send_bytes(0);
 
-using namespace asio_test;
+static const size_t kBytes = 8;
 
 void run_asio_echo_serv(const std::string & ip, const std::string & port,
                         uint32_t packet_size, uint32_t thread_num,
@@ -60,15 +62,15 @@ void run_asio_echo_serv(const std::string & ip, const std::string & port,
             std::cout << ip.c_str() << ":" << port.c_str() << " - " << packet_size << " bytes : "
                       << thread_num << " threads : "
                       << "[" << std::left << std::setw(4) << client_count << "] conns : "
-                      << "nodelay = " << g_nodelay << ", "
-                      << "mode = " << g_test_mode_str.c_str() << ", "
-                      << "test = " << g_test_method_str.c_str() << ", "
-                      << "qps = " << std::right << std::setw(7) << qps << ", "
-                      << "BandWidth = "
+                      << "nodelay:" << g_nodelay << ", "
+                      << "mode=" << g_test_mode_str.c_str() << ", "
+                      << "test=" << g_test_method_str.c_str() << ", "
+                      << "qps=" << std::right << std::setw(7) << qps << ", "
+                      << "BW="
                       << std::right << std::setw(6)
                       << std::setiosflags(std::ios::fixed) << std::setprecision(3)
-                      << ((qps * packet_size) / (1024.0 * 1024.0))
-                      << " MB/s" << std::endl;
+                      << ((qps * packet_size) * kBytes / (1024.0 * 1024.0))
+                      << " Mb/s" << std::endl;
             std::cout << std::right;
             last_query_count = cur_succeed_count;
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
@@ -105,15 +107,15 @@ void run_asio_echo_serv_ex(const std::string & ip, const std::string & port,
             std::cout << ip.c_str() << ":" << port.c_str() << " - " << packet_size << " bytes : "
                       << thread_num << " threads : "
                       << "[" << std::left << std::setw(4) << client_count << "] conns : "
-                      << "nodelay = " << g_nodelay << ", "
-                      << "mode = " << g_test_mode_str.c_str() << ", "
-                      << "test = " << g_test_method_str.c_str() << ", "
-                      << "qps = " << std::right << std::setw(7) << qps << ", "
-                      << "BandWidth = "
+                      << "nodelay:" << g_nodelay << ", "
+                      << "mode=" << g_test_mode_str.c_str() << ", "
+                      << "test=" << g_test_method_str.c_str() << ", "
+                      << "qps=" << std::right << std::setw(7) << qps << ", "
+                      << "BW="
                       << std::right << std::setw(6)
                       << std::setiosflags(std::ios::fixed) << std::setprecision(3)
-                      << ((qps * packet_size) / (1024.0 * 1024.0))
-                      << " MB/s" << std::endl;
+                      << ((qps * packet_size) * kBytes / (1024.0 * 1024.0))
+                      << " Mb/s" << std::endl;
             std::cout << std::right;
             last_query_count = cur_succeed_count;
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
@@ -153,20 +155,20 @@ void run_asio_http_server(const std::string & ip, const std::string & port,
             std::cout << ip.c_str() << ":" << port.c_str() << " - " << packet_size << " bytes : "
                       << thread_num << " threads : "
                       << "[" << std::left << std::setw(4) << client_count << "] conns : "
-                      << "nodelay: " << g_nodelay << ", "
-                      << "mode: " << g_test_mode_str.c_str() << ", "
-                      << "test: " << g_test_method_str.c_str() << ", "
-                      << "qps = " << std::right << std::setw(7) << qps << ", "
+                      << "nodelay:" << g_nodelay << ", "
+                      << "mode=" << g_test_mode_str.c_str() << ", "
+                      << "test=" << g_test_method_str.c_str() << ", "
+                      << "qps=" << std::right << std::setw(7) << qps << ", "
                       << "Recv BW: "
                       << std::right << std::setw(6)
                       << std::setiosflags(std::ios::fixed) << std::setprecision(3)
-                      << ((qps * packet_size) / (1024.0 * 1024.0))
-                      << " MB/s, "
+                      << ((qps * packet_size) * kBytes / (1024.0 * 1024.0))
+                      << " Mb/s, "
                       << "Send BW: "
                       << std::right << std::setw(6)
                       << std::setiosflags(std::ios::fixed) << std::setprecision(3)
-                      << ((qps * response_html_size) / (1024.0 * 1024.0))
-                      << " MB/s" << std::endl;
+                      << ((qps * response_html_size) * kBytes / (1024.0 * 1024.0))
+                      << " Mb/s" << std::endl;
             std::cout << std::right;
             last_query_count = cur_succeed_count;
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
@@ -229,7 +231,7 @@ int main(int argc, char * argv[])
         ("echo,e",          options::value<int32_t>(&need_echo)->default_value(1),                  "whether the server need echo")
         ;
 
-    // parse command line
+    // Parse the command line.
     options::variables_map args_map;
     try {
         options::store(options::parse_command_line(argc, argv, desc), args_map);

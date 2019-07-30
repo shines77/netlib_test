@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <string>
 #include <atomic>
 
 #define MIN_PACKET_SIZE     64
@@ -20,7 +21,9 @@ namespace asio_test {
 
 enum test_mode_t {
     test_mode_unknown,
-    test_mode_echo
+    test_mode_echo,
+    test_mode_http,
+    test_mode_last
 };
 
 enum test_method_t {
@@ -28,7 +31,8 @@ enum test_method_t {
     test_method_pingpong,
     test_method_qps,
     test_method_throughput,
-    test_method_latency
+    test_method_latency,
+    test_method_last
 };
 
 } // namespace asio_test

@@ -10,13 +10,14 @@
 #include "test_pingpong_client.hpp"
 #include "test_latency_client.hpp"
 #include "test_qps_client.hpp"
+#include "test_http_client.hpp"
 #include "common/cmd_utils.hpp"
 
 uint32_t g_test_mode      = asio_test::test_mode_echo;
 uint32_t g_test_method    = asio_test::test_method_pingpong;
 
-std::string g_test_mode_str     = "pingpong";
-std::string g_test_method_str   = "";
+std::string g_test_mode_str     = "echo";
+std::string g_test_method_str   = "pingpong";
 
 std::string g_server_ip;
 std::string g_server_port;
@@ -60,7 +61,7 @@ void run_qps_client(const std::string & app_name, const std::string & ip,
 
         ip::tcp::resolver resolver(io_service);
         auto endpoint_iterator = resolver.resolve( { ip, port } );
-        test_qps_client client(io_service, endpoint_iterator, g_test_mode, 32768, packet_size);
+        test_qps_client client(io_service, endpoint_iterator, g_test_method, 32768, packet_size);
 
         std::cout << "connectting " << ip.c_str() << ":" << port.c_str() << std::endl;
         std::cout << "packet_size: " << packet_size << std::endl;
@@ -111,6 +112,31 @@ void run_latency_client(const std::string & app_name, const std::string & ip,
         ip::tcp::resolver resolver(io_service);
         auto endpoint_iterator = resolver.resolve( { ip, port } );
         test_latency_client client(io_service, endpoint_iterator, packet_size);
+
+        std::cout << "connectting " << ip.c_str() << ":" << port.c_str() << std::endl;
+        std::cout << "packet_size: " << packet_size << std::endl;
+        std::cout << std::endl;
+
+        io_service.run();
+    }
+    catch (const std::exception & e) {
+        std::cerr << "Exception: " << e.what() << std::endl;
+    }
+    std::cout << app_name.c_str() << " done." << std::endl;
+}
+
+void run_http_client(const std::string & app_name, const std::string & ip,
+    const std::string & port, uint32_t packet_size, uint32_t test_time)
+{
+    std::cout << std::endl;
+    std::cout << app_name.c_str() << " [mode = " << g_test_mode_str.c_str() << "]" << std::endl;
+    std::cout << std::endl;
+    try {
+        boost::asio::io_service io_service;
+
+        ip::tcp::resolver resolver(io_service);
+        auto endpoint_iterator = resolver.resolve( { ip, port } );
+        test_http_client client(io_service, endpoint_iterator, g_test_method, 32768, packet_size);
 
         std::cout << "connectting " << ip.c_str() << ":" << port.c_str() << std::endl;
         std::cout << "packet_size: " << packet_size << std::endl;
@@ -224,6 +250,9 @@ int main(int argc, char * argv[])
     if (test_mode == "echo") {
         g_test_mode = test_mode_echo;
     }
+    if (test_mode == "http") {
+        g_test_mode = test_mode_http;
+    }
     else {
         // Write error log: Unknown test mode
         std::cerr << "Error: Unknown test mode: [" << mode.c_str() << "]." << std::endl;
@@ -305,7 +334,9 @@ int main(int argc, char * argv[])
     std::cout << "need_echo: " << need_echo << std::endl;
 
     // Run a test method
-    if (g_test_method == test_method_pingpong)
+    if (g_test_mode == test_mode_http)
+        run_http_client(app_name, server_ip, server_port, packet_size, test_time);
+    else if (g_test_method == test_method_pingpong)
         run_pingpong_client(app_name, server_ip, server_port, packet_size, test_time);
     else if (g_test_method == test_method_qps)
         run_qps_client(app_name, server_ip, server_port, packet_size, test_time);

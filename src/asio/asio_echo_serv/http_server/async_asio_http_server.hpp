@@ -85,7 +85,10 @@ public:
 
     void stop()
     {
-        acceptor_.cancel();
+        if (acceptor_.is_open()) {
+            acceptor_.cancel();
+            acceptor_.close();
+        }
     }
 
     void run()
@@ -126,7 +129,7 @@ private:
             this, boost::asio::placeholders::error, new_session));
     }
 
-    void do_accept2()
+    void do_accept_lambda()
     {
         session_.reset(new asio_http_session(io_service_pool_.get_io_service(), buffer_size_, packet_size_, g_test_mode));
         acceptor_.async_accept(session_->socket(),
@@ -137,13 +140,13 @@ private:
                 }
                 else {
                     // Accept error
-                    std::cout << "async_asio_http_server::handle_accept2() - Error: (code = " << ec.value() << ") "
+                    std::cout << "async_asio_http_server::handle_accept_lambda() - Error: (code = " << ec.value() << ") "
                               << ec.message().c_str() << std::endl;
                     session_->stop();
                     session_.reset();
                 }
 
-                do_accept2();
+                do_accept_lambda();
             });
     }
 };

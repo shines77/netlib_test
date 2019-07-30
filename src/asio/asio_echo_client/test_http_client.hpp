@@ -14,7 +14,29 @@ using namespace std::chrono;
 
 namespace asio_test {
 
-class test_qps_client
+const std::string g_request_html_header =
+        "GET /cookies HTTP/1.1\r\n"
+        "Host: 127.0.0.1:8090\r\n"
+        "Connection: keep-alive\r\n"
+        "Cache-Control: max-age=0\r\n"
+        "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\r\n"
+        "User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.17 (KHTML, like Gecko) Chrome/24.0.1312.56 Safari/537.17\r\n"
+        "Accept-Encoding: gzip,deflate,sdch\r\n"
+        "Accept-Language: en-US,en;q=0.8\r\n"
+        "Accept-Charset: ISO-8859-1,utf-8;q=0.7,*;q=0.3\r\n"
+        "Cookie: name=wookie\r\n"
+        "\r\n";
+
+const std::string g_response_html =
+        "HTTP/1.1 200 OK\r\n"
+        "Date: Fri, 31 Aug 2016 16:25:26 GMT\r\n"
+        "Server: boost-asio\r\n"
+        "Content-Type: text/html\r\n"
+        "Content-Length: 12\r\n"
+        "Connection: Keep-Alive\r\n\r\n"
+        "Hello World!";
+
+class test_http_client
 {
 private:
     enum { PACKET_SIZE = MAX_PACKET_SIZE };
@@ -25,6 +47,8 @@ private:
     uint32_t mode_;
     uint32_t buffer_size_;
     uint32_t packet_size_;
+    size_t html_header_size_;
+    size_t html_response_size_;
 
     uint64_t last_query_count_;
     uint64_t total_query_count_;
@@ -45,21 +69,26 @@ private:
     char send_data_[PACKET_SIZE];
 
 public:
-    test_qps_client(boost::asio::io_service & io_service,
+    test_http_client(boost::asio::io_service & io_service,
         ip::tcp::resolver::iterator endpoint_iterator, uint32_t mode, uint32_t buffer_size, uint32_t packet_size)
         : io_service_(io_service),
-          socket_(io_service), mode_(mode), buffer_size_(buffer_size), packet_size_(packet_size),
+          socket_(io_service), mode_(mode), buffer_size_(buffer_size), packet_size_(packet_size), html_header_size_(0),
           last_query_count_(0), total_query_count_(0), last_total_latency_(0.0), total_latency_(0.0),
           send_bytes_(0), recieved_bytes_(0), sent_cnt_(0)
     {
-        ::memset(recv_data_, 'h', sizeof(recv_data_) - 1);
-        ::memset(send_data_, 'k', sizeof(send_data_) - 1);
+        html_header_size_ = g_request_html_header.size();
+        html_response_size_ = g_response_html.size();
+
+        ::memset(recv_data_, 0, sizeof(recv_data_));
+        ::memset(send_data_, 0, sizeof(send_data_));
+        ::memcpy((void *)&send_data_[0], (void *)g_request_html_header.c_str(), html_header_size_);
+
         last_time_ = high_resolution_clock::now();
 
         do_connect(endpoint_iterator);
     }
 
-    ~test_qps_client()
+    ~test_http_client()
     {
         time_point<high_resolution_clock> startime = high_resolution_clock::now();
 
@@ -204,8 +233,8 @@ private:
             boost::asio::buffer(recv_data_, packet_size_),
             [this](const boost::system::error_code & ec, std::size_t recieved_bytes)
             {
-                if ((uint32_t)recieved_bytes != packet_size_) {
-                    std::cout << "test_qps_client::do_read(): async_read(), recieved_bytes = "
+                if ((uint32_t)recieved_bytes != html_response_size_) {
+                    std::cout << "test_http_client::do_read(): async_read(), recieved_bytes = "
                               << recieved_bytes << " bytes." << std::endl;
                 }
                 if (!ec)
@@ -221,7 +250,7 @@ private:
                 }
                 else {
                     // Write error log
-                    std::cout << "test_qps_client::do_read() - Error: (code = " << ec.value() << ") "
+                    std::cout << "test_http_client::do_read() - Error: (code = " << ec.value() << ") "
                               << ec.message().c_str() << std::endl;
                 }
             });
@@ -232,8 +261,8 @@ private:
         socket_.async_read_some(boost::asio::buffer(recv_data_, buffer_size_),
             [this](const boost::system::error_code & ec, std::size_t recieved_bytes)
             {
-                if ((uint32_t)recieved_bytes != packet_size_) {
-                    std::cout << "test_qps_client::do_read(): async_read(), recieved_bytes = "
+                if ((uint32_t)recieved_bytes != html_response_size_) {
+                    std::cout << "test_http_client::do_read_some(): async_read(), recieved_bytes = "
                               << recieved_bytes << " bytes." << std::endl;
                 }
                 if (!ec)
@@ -245,11 +274,70 @@ private:
 
                     display_counters();
 
-                    do_write();
+                    do_write_some();
                 }
                 else {
                     // Write error log
-                    std::cout << "test_qps_client::do_read() - Error: (code = " << ec.value() << ") "
+                    std::cout << "test_http_client::do_read_some() - Error: (code = " << ec.value() << ") "
+                              << ec.message().c_str() << std::endl;
+                }
+            });
+    }
+
+    void do_sync_read_some()
+    {
+        socket_.async_read_some(boost::asio::buffer(recv_data_, buffer_size_),
+            [this](const boost::system::error_code & ec, std::size_t recieved_bytes)
+            {
+                /*
+                if ((uint32_t)recieved_bytes != html_response_size_) {
+                    std::cout << "test_http_client::do_sync_read_some(): async_read(), recieved_bytes = "
+                              << recieved_bytes << " bytes." << std::endl;
+                }
+                //*/
+
+                if (!ec)
+                {
+                    // Have recieved the response message
+                    recieve_time_ = high_resolution_clock::now();
+                    if (recieved_bytes > 0)
+                        recieved_bytes_ += (uint32_t)recieved_bytes;
+
+                    display_counters();
+
+                    do_sync_write(kSendRepeatTimes);
+                }
+                else {
+                    // Write error log
+                    std::cout << "test_http_client::do_sync_read_some() - Error: (code = " << ec.value() << ") "
+                              << ec.message().c_str() << std::endl;
+                }
+            });
+    }
+
+    void do_sync_read_only()
+    {
+        socket_.async_read_some(boost::asio::buffer(recv_data_, buffer_size_),
+            [this](const boost::system::error_code & ec, std::size_t recieved_bytes)
+            {
+                if ((uint32_t)recieved_bytes != html_response_size_) {
+                    std::cout << "test_http_client::do_sync_read_only(): async_read_some(), recieved_bytes = "
+                              << recieved_bytes << " bytes." << std::endl;
+                }
+                if (!ec)
+                {
+                    // Have recieved the response message
+                    recieve_time_ = high_resolution_clock::now();
+                    if (recieved_bytes > 0)
+                        recieved_bytes_ += (uint32_t)recieved_bytes;
+
+                    display_counters();
+
+                    do_sync_write_only();
+                }
+                else {
+                    // Write error log
+                    std::cout << "test_http_client::do_sync_read_only() - Error: (code = " << ec.value() << ") "
                               << ec.message().c_str() << std::endl;
                 }
             });
@@ -261,11 +349,11 @@ private:
         send_time_ = high_resolution_clock::now();
 
         boost::asio::async_write(socket_,
-            boost::asio::buffer(send_data_, packet_size_),
+            boost::asio::buffer(send_data_, html_header_size_),
             [this](const boost::system::error_code & ec, std::size_t send_bytes)
             {
-                if ((uint32_t)send_bytes != packet_size_) {
-                    std::cout << "test_qps_client::do_write(): async_write(), send_bytes = "
+                if ((uint32_t)send_bytes != html_header_size_) {
+                    std::cout << "test_http_client::do_write(): async_write(), send_bytes = "
                               << send_bytes << " bytes." << std::endl;
                 }
                 if (!ec)
@@ -275,7 +363,33 @@ private:
                 }
                 else {
                     // Write error log
-                    std::cout << "test_qps_client::do_write() - Error: (code = " << ec.value() << ") "
+                    std::cout << "test_http_client::do_write() - Error: (code = " << ec.value() << ") "
+                              << ec.message().c_str() << std::endl;
+                }
+            });
+    }
+
+    void do_write_some()
+    {
+        // Prepare to send the request message
+        send_time_ = high_resolution_clock::now();
+
+        boost::asio::async_write(socket_,
+            boost::asio::buffer(send_data_, html_header_size_),
+            [this](const boost::system::error_code & ec, std::size_t send_bytes)
+            {
+                if ((uint32_t)send_bytes != html_header_size_) {
+                    std::cout << "test_http_client::do_write(): async_write(), send_bytes = "
+                              << send_bytes << " bytes." << std::endl;
+                }
+                if (!ec)
+                {
+                    send_bytes_ += (uint32_t)send_bytes;
+                    do_read_some();
+                }
+                else {
+                    // Write error log
+                    std::cout << "test_http_client::do_write() - Error: (code = " << ec.value() << ") "
                               << ec.message().c_str() << std::endl;
                 }
             });
@@ -288,17 +402,17 @@ private:
 
         for (int i = 0; i < repeat; ++i) {
             boost::system::error_code ec;
-            std::size_t send_bytes = socket_.send(boost::asio::buffer(send_data_, packet_size_), 0, ec);
+            std::size_t send_bytes = socket_.send(boost::asio::buffer(send_data_, html_header_size_), 0, ec);
             if (!ec) {
                 send_bytes_ += (uint32_t)send_bytes;
             }
             else {
-                std::cout << "test_qps_client::do_sync_write() - Error: (code = " << ec.value() << ") "
+                std::cout << "test_http_client::do_sync_write() - Error: (code = " << ec.value() << ") "
                           << ec.message().c_str() << std::endl;
             }
         }
 
-        do_read_some();
+        do_sync_read_some();
     }
 
     void do_async_write_only()
@@ -321,7 +435,7 @@ private:
         static unsigned int sent_cnt = 0;
         for (;;) {
             boost::system::error_code ec;
-            std::size_t send_bytes = socket_.send(boost::asio::buffer(send_data_, packet_size_), 0, ec);
+            std::size_t send_bytes = socket_.send(boost::asio::buffer(send_data_, html_header_size_), 0, ec);
             if (!ec) {
                 if (send_bytes > 0) {
                     sent_cnt++;
@@ -341,12 +455,12 @@ private:
                 }
             }
             else {
-                std::cout << "test_qps_client::do_sync_write_only() - Error: (code = " << ec.value() << ") "
+                std::cout << "test_http_client::do_sync_write_only() - Error: (code = " << ec.value() << ") "
                           << ec.message().c_str() << std::endl;
             }
         }
 #else
-        boost::asio::async_write(socket_, boost::asio::buffer(send_data_, packet_size_),
+        boost::asio::async_write(socket_, boost::asio::buffer(send_data_, html_header_size_),
             [this](const boost::system::error_code & ec, std::size_t send_bytes)
             {
                 if (!ec) {
@@ -371,7 +485,7 @@ private:
                     do_sync_write_only();
                 }
                 else {
-                    std::cout << "test_qps_client::do_sync_write_only() - Error: (code = " << ec.value() << ") "
+                    std::cout << "test_http_client::do_sync_write_only() - Error: (code = " << ec.value() << ") "
                                 << ec.message().c_str() << std::endl;
                 }
         });
