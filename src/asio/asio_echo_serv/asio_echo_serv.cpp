@@ -15,6 +15,7 @@
 #include "http_server/async_asio_http_server.hpp"
 
 using namespace asio_test;
+using namespace std::chrono;
 
 uint32_t g_test_mode    = asio_test::test_mode_echo_server;
 uint32_t g_test_method  = asio_test::test_method_pingpong;
@@ -36,6 +37,8 @@ asio_test::aligned_atomic<uint32_t> asio_test::g_client_count(0);
 
 asio_test::aligned_atomic<uint64_t> asio_test::g_recv_bytes(0);
 asio_test::aligned_atomic<uint64_t> asio_test::g_send_bytes(0);
+
+time_point<steady_clock> g_start_time_ = high_resolution_clock::now();
 
 static const size_t kBytes = 8;
 
@@ -132,7 +135,7 @@ void run_asio_http_server(const std::string & ip, const std::string & port,
                           uint32_t packet_size, uint32_t thread_num,
                           bool confirm = false)
 {
-    static const uint32_t kSeesionBufferSize = 65536;
+    static const uint32_t kSeesionBufferSize = 65536 * 2;
     try {
         async_asio_http_server server(ip, port, kSeesionBufferSize, packet_size, thread_num);
         server.run();
@@ -145,6 +148,12 @@ void run_asio_http_server(const std::string & ip, const std::string & port,
         std::cout << std::endl;
 
         static const std::size_t response_html_size = g_response_html.size();
+        static const std::size_t request_html_header_size = g_request_html_header.size();
+
+        duration<double> elapsed_time_;
+        time_point<high_resolution_clock> last_time_;
+
+        last_time_ = high_resolution_clock::now();
 
         uint64_t last_query_count = 0;
         while (true) {
@@ -152,6 +161,8 @@ void run_asio_http_server(const std::string & ip, const std::string & port,
             auto client_count = (uint32_t)g_client_count;
             auto qps = (cur_succeed_count - last_query_count);
             packet_size = g_packet_size;
+            elapsed_time_ = duration_cast< duration<double> >(high_resolution_clock::now() - g_start_time_);
+            double total_time = elapsed_time_.count();
             std::cout << ip.c_str() << ":" << port.c_str() << " - " << packet_size << " bytes : "
                       << thread_num << " threads : "
                       << "[" << std::left << std::setw(4) << client_count << "] conns : "
@@ -162,12 +173,22 @@ void run_asio_http_server(const std::string & ip, const std::string & port,
                       << "Recv BW: "
                       << std::right << std::setw(6)
                       << std::setiosflags(std::ios::fixed) << std::setprecision(3)
-                      << ((qps * packet_size) * kBytes / (1024.0 * 1024.0))
+                      << ((qps * request_html_header_size) * kBytes / (1024.0 * 1024.0))
                       << " Mb/s, "
                       << "Send BW: "
                       << std::right << std::setw(6)
                       << std::setiosflags(std::ios::fixed) << std::setprecision(3)
                       << ((qps * response_html_size) * kBytes / (1024.0 * 1024.0))
+                      << " Mb/s" << ", "
+                      << "Recv BW: "
+                      << std::right << std::setw(6)
+                      << std::setiosflags(std::ios::fixed) << std::setprecision(3)
+                      << (g_recv_bytes * kBytes / (1024.0 * 1024.0) / total_time)
+                      << " Mb/s, "
+                      << "Send BW: "
+                      << std::right << std::setw(6)
+                      << std::setiosflags(std::ios::fixed) << std::setprecision(3)
+                      << (g_send_bytes * kBytes / (1024.0 * 1024.0) / total_time)
                       << " Mb/s" << std::endl;
             std::cout << std::right;
             last_query_count = cur_succeed_count;

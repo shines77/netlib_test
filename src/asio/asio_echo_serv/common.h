@@ -3,7 +3,10 @@
 #include <stdint.h>
 #include <string>
 #include <atomic>
+#include <chrono>
 #include "common/aligned_atomic.hpp"
+
+using namespace std::chrono;
 
 extern uint32_t g_test_mode;
 extern uint32_t g_test_method;
@@ -19,6 +22,7 @@ extern std::string g_rpc_topic;
 
 extern std::string g_server_ip;
 extern std::string g_server_port;
+extern time_point<steady_clock> g_start_time_;
 
 namespace asio_test {
 

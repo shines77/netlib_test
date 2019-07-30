@@ -35,7 +35,7 @@ private:
 
 public:
     async_asio_http_server(const std::string & ip_addr, const std::string & port,
-        uint32_t buffer_size = 65536,
+        uint32_t buffer_size = 65536 * 2,
         uint32_t packet_size = 64,
         uint32_t pool_size = std::thread::hardware_concurrency())
         : io_service_pool_(pool_size), acceptor_(io_service_pool_.get_first_io_service()),

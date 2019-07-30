@@ -5,6 +5,7 @@
 #include <memory>
 #include <utility>
 #include <atomic>
+#include <algorithm>
 #include <boost/asio.hpp>
 #include <boost/system/error_code.hpp>
 #include <boost/smart_ptr.hpp>
@@ -27,6 +28,19 @@ using namespace boost::system;
 using namespace boost::asio;
 
 namespace asio_test {
+
+const std::string g_request_html_header =
+        "GET /cookies HTTP/1.1\r\n"
+        "Host: 127.0.0.1:8090\r\n"
+        "Connection: keep-alive\r\n"
+        "Cache-Control: max-age=0\r\n"
+        "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\r\n"
+        "User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.17 (KHTML, like Gecko) Chrome/24.0.1312.56 Safari/537.17\r\n"
+        "Accept-Encoding: gzip,deflate,sdch\r\n"
+        "Accept-Language: en-US,en;q=0.8\r\n"
+        "Accept-Charset: ISO-8859-1,utf-8;q=0.7,*;q=0.3\r\n"
+        "Cookie: name=wookie\r\n"
+        "\r\n";
 
 const std::string g_response_html =
         "HTTP/1.1 200 OK\r\n"
@@ -106,28 +120,26 @@ public:
     }
 
     void rollback() {
-        std::size_t empty_bytes = empty_size();
+        std::size_t offset = this->offset();
         std::size_t free_bytes = free_size();
         std::size_t data_bytes = data_length();
         std::size_t parsed_offset = parse_pos();
 
-        if (data_bytes <= empty_bytes) {
-            ::memcpy(bottom(), back(), data_bytes);
-            reset(data_bytes, parsed_offset);
+        if (offset >= 16) {
+            ::memcpy((void *)bottom(), (void *)back(), data_bytes * sizeof(char));
         }
         else {
-            std::cout << "http_ring_buffer::rollback(): (data_bytes > empty_bytes) --> "
-                      <<  data_bytes << " > " << empty_bytes << std::endl;
+            ::memmove((void *)bottom(), (void *)back(), data_bytes * sizeof(char));
         }
+        reset(data_bytes, parsed_offset);
     }
 
     bool read(std::size_t recv_size) {
-        if (front_ + recv_size < top_) {
+        if (front_ + recv_size <= top_) {
             front_ += recv_size;
             return true;
         }
         else {
-            front_ = top_;
             return false;
         }
     }
@@ -151,7 +163,22 @@ public:
     }
 
     bool parse(char * &parsed) {
-#if 1
+        // Forward-tracking find method
+        char * cur = parsed_;
+        while (cur <= (front_ - 4)) {
+            if (cur[0] == '\r' && cur[2] == '\r'
+                && cur[1] == '\n' && cur[3] == '\n') {
+                parsed = (cur + 4);
+                return true;
+            }
+            cur++;
+            assert(cur < top_);
+        }
+        parsed = cur;
+        return false;
+    }
+
+    bool back_parse(char * &parsed) {
         // Back-tracking find method
         char * cur = front_ - 4;
         while (cur >= parsed_) {
@@ -180,20 +207,6 @@ public:
         }
         parsed = front_;
         return false;
-#else
-        // Forward-tracking find method
-        char * cur = parsed_;
-        while (cur <= (front_ - 4)) {
-            if (cur[0] == '\r' && cur[2] == '\n'
-                && cur[1] == '\r' && cur[3] == '\n') {
-                parsed = (cur + 4);
-                return true;
-            }
-            cur++;
-        }
-        parsed = (cur - 1);
-        return false;
-#endif
     }
 };
 
@@ -207,14 +220,16 @@ private:
     uint32_t    need_echo_;
     uint32_t    buffer_size_;
     uint32_t    packet_size_;
-    uint64_t    query_count_;
+    uint64_t    recv_counter_;
+    uint64_t    send_counter_;
 
     uint32_t    recv_bytes_;
     uint32_t    send_bytes_;
     uint32_t    recv_cnt_;
     uint32_t    send_cnt_;
 
-    uint32_t    delta_query_count_;
+    uint32_t    delta_recv_count_;
+    uint32_t    delta_send_count_;
     uint32_t    recv_bytes_remain_;
     uint32_t    send_bytes_remain_;
 
@@ -224,8 +239,8 @@ public:
     asio_http_session(boost::asio::io_service & io_service, uint32_t buffer_size,
                       uint32_t packet_size, uint32_t need_echo = mode_need_echo)
         : socket_(io_service), nodelay_(false), need_echo_(need_echo), buffer_size_(buffer_size), packet_size_(packet_size),
-          query_count_(0), recv_bytes_(0), send_bytes_(0), recv_cnt_(0), send_cnt_(0), delta_query_count_(0),
-          recv_bytes_remain_(0), send_bytes_remain_(0), buffer_(buffer_size)
+          recv_counter_(0), send_counter_(0), recv_bytes_(0), send_bytes_(0), recv_cnt_(0), send_cnt_(0),
+          delta_recv_count_(0), delta_send_count_(0), recv_bytes_remain_(0), send_bytes_remain_(0), buffer_(buffer_size)
     {
         nodelay_ = (g_nodelay != 0);
         if (buffer_size_ > MAX_PACKET_SIZE)
@@ -258,16 +273,19 @@ public:
 
         g_client_count++;
 
+        g_start_time_ = high_resolution_clock::now();
+
         do_read_some();
     }
 
     void stop(bool delete_self = false)
     {
+#if !defined(_WIN32_WINNT) || (_WIN32_WINNT >= 0x0600)
+        socket_.cancel();
+#endif
+
         //socket_.shutdown(socket_base::shutdown_both);
         if (socket_.is_open()) {
-#if !defined(_WIN32_WINNT) || (_WIN32_WINNT >= 0x0600)
-            socket_.cancel();
-#endif
             socket_.close();
 
             if (g_client_count.load() != 0)
@@ -334,15 +352,15 @@ private:
 #endif
     }
 
-    inline void do_send_counter(uint32_t byte_sent)
+    inline void do_send_counter(uint32_t bytes_sent)
     {
 #if defined(USE_ATOMIC_REALTIME_UPDATE) && (USE_ATOMIC_REALTIME_UPDATE > 0)
-        if (byte_sent > 0) {
-            g_send_bytes.fetch_add(byte_sent);
+        if (bytes_sent > 0) {
+            g_send_bytes.fetch_add(bytes_sent);
         }
 #else
-        if (byte_sent > 0) {
-            send_bytes_ += byte_sent;
+        if (bytes_sent > 0) {
+            send_bytes_ += bytes_sent;
             send_cnt_++;
             if (send_cnt_ >= MAX_UPDATE_CNT || send_bytes_ >= MAX_UPDATE_BYTES) {
                 g_send_bytes.fetch_add(send_bytes_);
@@ -353,34 +371,34 @@ private:
 #endif
     }
 
-    inline void do_query_counter()
+    inline void do_recv_qps_counter()
     {
 #if defined(USE_ATOMIC_REALTIME_UPDATE) && (USE_ATOMIC_REALTIME_UPDATE > 0)
         g_query_count.fetch_add(1);
 #else
-        query_count_++;
-        if (query_count_ >= QUERY_COUNTER_INTERVAL) {
+        recv_counter_++;
+        if (recv_counter_ >= QUERY_COUNTER_INTERVAL) {
             g_query_count.fetch_add(QUERY_COUNTER_INTERVAL);
-            query_count_ = 0;
+            recv_counter_ = 0;
         }
 #endif
     }
 
-    inline void do_query_counter_read_some(uint32_t recv_bytes)
+    inline void do_recv_qps_counter_read_some(uint32_t recv_bytes)
     {
         uint32_t delta_bytes = recv_bytes_remain_ + recv_bytes;
-        if (delta_bytes >= packet_size_) {
-            uint32_t delta_query_count = delta_bytes / packet_size_;
+        if (delta_bytes >= g_request_html_header.size()) {
+            uint64_t delta_send_count = delta_bytes / g_request_html_header.size();
 #if defined(USE_ATOMIC_REALTIME_UPDATE) && (USE_ATOMIC_REALTIME_UPDATE > 0)
-            if (delta_query_count > 0) {
-                g_query_count.fetch_add(delta_query_count);
-                recv_bytes_remain_ = delta_bytes - packet_size_ * delta_query_count;
+            if (delta_send_count > 0) {
+                g_query_count.fetch_add(delta_send_count);
+                recv_bytes_remain_ = delta_bytes - g_request_html_header.size() * delta_send_count;
                 return;
             }
 #else
-            if (delta_query_count >= QUERY_COUNTER_INTERVAL) {
-                g_query_count.fetch_add(delta_query_count);
-                recv_bytes_remain_ = delta_bytes - packet_size_ * delta_query_count;
+            if (delta_send_count >= QUERY_COUNTER_INTERVAL) {
+                g_query_count.fetch_add(delta_send_count);
+                recv_bytes_remain_ = delta_bytes - (uint32_t)(g_request_html_header.size() * delta_send_count);
                 return;
             }
 #endif
@@ -388,22 +406,22 @@ private:
         recv_bytes_remain_ = delta_bytes;
     }
 
-    inline void do_query_counter_write_some(uint32_t send_bytes)
+    inline void do_send_counter_write_some(uint32_t send_bytes)
     {
         uint32_t delta_bytes = send_bytes_remain_ + send_bytes;
-        static const uint32_t reponse_size = (uint32_t)g_response_html.size();
-        if (delta_bytes >= reponse_size) {
-            uint32_t delta_query_count = delta_bytes / reponse_size;
+        static const uint32_t response_size = (uint32_t)g_response_html.size();
+        if (delta_bytes >= response_size) {
+            uint32_t delta_query_count = delta_bytes / response_size;
 #if defined(USE_ATOMIC_REALTIME_UPDATE) && (USE_ATOMIC_REALTIME_UPDATE > 0)
             if (delta_query_count > 0) {
-                g_query_count.fetch_add(delta_query_count);
-                send_bytes_remain_ = delta_bytes - reponse_size * delta_query_count;
+                //g_query_count.fetch_add(delta_query_count);
+                send_bytes_remain_ = delta_bytes - response_size * delta_query_count;
                 return;
             }
 #else
             if (delta_query_count >= QUERY_COUNTER_INTERVAL) {
-                g_query_count.fetch_add(delta_query_count);
-                send_bytes_remain_ = delta_bytes - reponse_size * delta_query_count;
+                //g_query_count.fetch_add(delta_query_count);
+                send_bytes_remain_ = delta_bytes - response_size * delta_query_count;
                 return;
             }
 #endif
@@ -411,15 +429,15 @@ private:
         send_bytes_remain_ = delta_bytes;
     }
 
-    inline void do_query_counter_sync_write()
+    inline void do_send_counter_sync_write()
     {
 #if defined(USE_ATOMIC_REALTIME_UPDATE) && (USE_ATOMIC_REALTIME_UPDATE > 0)
         g_query_count.fetch_add(1);
 #else
-        delta_query_count_++;
-        if (delta_query_count_ >= QUERY_COUNTER_INTERVAL) {
-            g_query_count.fetch_add(delta_query_count_);
-            delta_query_count_ = 0;
+        delta_send_count_++;
+        if (delta_send_count_ >= QUERY_COUNTER_INTERVAL) {
+            //g_query_count.fetch_add(delta_send_count_);
+            delta_send_count_ = 0;
         }
 #endif
     }
@@ -460,7 +478,7 @@ private:
                     do_send_counter((uint32_t)send_bytes);
 
                     // If get a circle of ping-pong, we count the query one time.
-                    do_query_counter_write_some((uint32_t)send_bytes);
+                    do_send_counter_write_some((uint32_t)send_bytes);
 
                     if ((uint32_t)send_bytes != packet_size_) {
                         std::cout << "asio_http_session::do_write(): async_write(), send_bytes = "
@@ -484,8 +502,14 @@ private:
         static bool is_first_read = true;
         static int debug_output_cnt = 0;
 
+        if (buffer_.free_size() <= 1024) {
+            // Roll back the ring buffer
+            buffer_.rollback();
+        }
+
         char * read_data = buffer_.front();
-        std::size_t read_size = buffer_.free_size();
+        std::size_t read_size = std::min(buffer_size_, (uint32_t)buffer_.free_size());
+        assert(read_size > 0);
 
         socket_.async_read_some(boost::asio::buffer(read_data, read_size),
             [this](const boost::system::error_code & ec, std::size_t recv_bytes)
@@ -505,11 +529,12 @@ private:
                         }
 #endif
                     }
+
                     // Count the recieved bytes
                     do_recieve_counter((uint32_t)recv_bytes);
 
-                    bool is_overflow = buffer_.read(recv_bytes);
-                    if (!is_overflow) {
+                    bool is_ok = buffer_.read(recv_bytes);
+                    if (!is_ok) {
                         // Roll back the ring buffer
                         buffer_.rollback();
 
@@ -518,27 +543,34 @@ private:
                     }
                     
                     char * scanned;
-                    bool http_header_ok = buffer_.parse(scanned);
-                    if (http_header_ok) {
-                        buffer_.parse_to(scanned);
+                    bool http_header_ok;
+                    do {
+                        http_header_ok = buffer_.parse(scanned);
+                        if (http_header_ok) {
+                            buffer_.parse_to(scanned);
 
-                        // A successful http request, can be used to statistic qps.
-                        if (!nodelay_) {
-                            // nodelay = false;
+                            do_recv_qps_counter();
+
+                            // A successful http request, can be used to statistic qps.
+                            if (!nodelay_) {
+                                // nodelay = false;
 #if 1
-                            do_async_write_http_response();
+                                do_async_write_http_response();
 #else
-                            do_async_write_http_response_some();
+                                do_async_write_http_response_some();
 #endif
+                            }
+                            else {
+                                // nodelay = true;
+                                do_sync_write_http_response();
+                            }
                         }
                         else {
-                            // nodelay = true;
-                            do_sync_write_http_response();
+                            break;
                         }
-                    }
-                    else {
-                        do_read_some();
-                    }
+                    } while (1);
+
+                    do_read_some();
                 }
                 else {
                     // Write error log
@@ -571,14 +603,14 @@ private:
             do_send_counter((uint32_t)send_bytes);
 
             // If get a circle of ping-pong, we count the query one time.
-            do_query_counter_sync_write();
+            do_send_counter_sync_write();
 
             if ((uint32_t)send_bytes != g_response_html.size() && send_bytes != 0) {
                 std::cout << "asio_http_session::do_sync_write_http_response(): async_write(), send_bytes = "
                             << send_bytes << " bytes." << std::endl;
             }
 
-            do_read_some();
+            //do_read_some();
         }
         else {
             // Write error log
@@ -606,14 +638,14 @@ private:
                     do_send_counter((uint32_t)send_bytes);
 
                     // If get a circle of ping-pong, we count the query one time.
-                    do_query_counter_sync_write();
+                    do_send_counter_sync_write();
 
                     if ((uint32_t)send_bytes != g_response_html.size() && send_bytes != 0) {
                         std::cout << "asio_http_session::do_async_write_http_response(): async_write(), send_bytes = "
                                   << send_bytes << " bytes." << std::endl;
                     }
 
-                    do_read_some();
+                    //do_read_some();
                 }
                 else {
                     // Write error log
@@ -643,14 +675,14 @@ private:
                     do_send_counter((uint32_t)send_bytes);
 
                     // If get a circle of ping-pong, we count the query one time.
-                    do_query_counter_sync_write();
+                    do_send_counter_sync_write();
 
                     if ((uint32_t)send_bytes != g_response_html.size() && send_bytes != 0) {
                         std::cout << "asio_http_session::do_async_write_http_response_some(): async_write(), send_bytes = "
                                   << send_bytes << " bytes." << std::endl;
                     }
 
-                    do_read_some();
+                    //do_read_some();
                 }
                 else {
                     // Write error log
@@ -681,7 +713,7 @@ private:
                         do_send_counter((uint32_t)send_bytes);
 
                         // If get a circle of ping-pong, we count the query one time.
-                        do_query_counter_write_some((uint32_t)send_bytes);
+                        do_send_counter_write_some((uint32_t)send_bytes);
 
                         if ((uint32_t)send_bytes != buffer_size) {
                             std::cout << "asio_http_session::do_write_some(): async_write(), send_bytes = "
@@ -709,7 +741,7 @@ private:
                         do_send_counter((uint32_t)send_bytes);
 
                         // If get a circle of ping-pong, we count the query one time.
-                        do_query_counter_write_some((uint32_t)send_bytes);
+                        do_send_counter_write_some((uint32_t)send_bytes);
 
                         if ((uint32_t)send_bytes != buffer_size) {
                             std::cout << "asio_http_session::do_write_some(): async_write(), send_bytes = "
