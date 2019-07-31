@@ -91,12 +91,14 @@ public:
 
     void stop(bool delete_self = false)
     {
-#if !defined(_WIN32_WINNT) || (_WIN32_WINNT >= 0x0600)
-        socket_.cancel();
-#endif
-
-        //socket_.shutdown(socket_base::shutdown_both);
         if (socket_.is_open()) {
+#if !defined(_WIN32_WINNT) || (_WIN32_WINNT >= 0x0600)
+            socket_.cancel();
+#endif
+            // Initiate graceful connection closure.
+            boost::system::error_code ignored_ec;
+            socket_.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignored_ec);
+
             socket_.close();
 
             if (g_client_count.load() != 0)
@@ -268,7 +270,9 @@ private:
                     // Write error log
                     std::cout << "asio_session::do_read() - Error: (code = " << ec.value() << ") "
                               << ec.message().c_str() << std::endl;
-                    stop(true);
+
+                    if (ec != boost::asio::error::operation_aborted)
+                        stop(true);
                 }
             }
         );
@@ -298,7 +302,9 @@ private:
                     // Write error log
                     std::cout << "asio_session::do_write() - Error: (code = " << ec.value() << ") "
                               << ec.message().c_str() << std::endl;
-                    stop(true);
+
+                    if (ec != boost::asio::error::operation_aborted)
+                        stop(true);
                 }
             }
         );
@@ -365,7 +371,9 @@ private:
                     // Write error log
                     std::cout << "asio_session::do_read_some() - Error: (code = " << ec.value() << ") "
                               << ec.message().c_str() << std::endl;
-                    stop(true);
+
+                    if (ec != boost::asio::error::operation_aborted)
+                        stop(true);
                 }
             }
         );
@@ -403,7 +411,9 @@ private:
                         // Write error log
                         std::cout << "asio_session::do_write_some() - Error: (code = " << ec.value() << ") "
                                   << ec.message().c_str() << std::endl;
-                        stop(true);
+
+                        if (ec != boost::asio::error::operation_aborted)
+                            stop(true);
                     }
                 }
             );
@@ -430,7 +440,9 @@ private:
                         // Write error log
                         std::cout << "asio_session::do_write_some() - Error: (code = " << ec.value() << ") "
                                   << ec.message().c_str() << std::endl;
-                        stop(true);
+
+                        if (ec != boost::asio::error::operation_aborted)
+                            stop(true);
                     }
                 }
             );

@@ -290,9 +290,11 @@ public:
         do_read_some();
     }
 
-    void stop(bool delete_self)
+    void stop()
     {
         if (socket_.native_handle()) {
+            init_shutdown();
+
 #if !defined(_WIN32_WINNT) || (_WIN32_WINNT >= 0x0600)
             //socket_.cancel();
 #endif
@@ -300,9 +302,6 @@ public:
 
             if (g_client_count.load() != 0)
                 g_client_count--;
-
-            if (delete_self)
-                delete this;
         }
     }
 
@@ -312,8 +311,8 @@ public:
     void init_shutdown()
     {
         // Initiate graceful connection closure.
-        //boost::system::error_code ignored_ec;
-        //socket_.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignored_ec);
+        boost::system::error_code ignored_ec;
+        socket_.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignored_ec);
     }
 
     ip::tcp::socket & socket()
@@ -495,8 +494,6 @@ private:
             [this](const boost::system::error_code & ec, std::size_t send_bytes)
             {
                 if (!ec) {
-                    init_shutdown();
-
                     // Count the sent bytes
                     do_send_counter((uint32_t)send_bytes);
 
@@ -617,7 +614,6 @@ private:
             boost::asio::buffer(g_response_html.c_str(), g_response_html.size()),
             ec);
         if (!ec) {
-            init_shutdown();
 #if 0
             if (is_first_read) {
                 std::cout << "g_response_html.size() = " << g_response_html.size() << std::endl;
@@ -654,7 +650,6 @@ private:
             [this](const boost::system::error_code & ec, std::size_t send_bytes)
             {
                 if (!ec) {
-                    init_shutdown();
 #if 0
                     if (is_first_read) {
                         std::cout << "g_response_html.size() = " << g_response_html.size() << std::endl;
@@ -693,7 +688,6 @@ private:
             [this](const boost::system::error_code & ec, std::size_t send_bytes)
             {
                 if (!ec) {
-                    init_shutdown();
 #if 0
                     if (is_first_read) {
                         std::cout << "g_response_html.size() = " << g_response_html.size() << std::endl;
@@ -739,8 +733,6 @@ private:
                 [this, buffer_size](const boost::system::error_code & ec, std::size_t send_bytes)
                 {
                     if (!ec) {
-                        init_shutdown();
-
                         // Count the sent bytes
                         do_send_counter((uint32_t)send_bytes);
 
@@ -770,8 +762,6 @@ private:
                 [this, buffer_size](const boost::system::error_code & ec, std::size_t send_bytes)
                 {
                     if (!ec) {
-                        init_shutdown();
-
                         // Count the sent bytes
                         do_send_counter((uint32_t)send_bytes);
 
@@ -826,13 +816,13 @@ public:
     void connection_manager::stop(connection_ptr connection)
     {
         connections_.erase(connection);
-        connection->stop(false);
+        connection->stop();
     }
 
     /// Stop all connections.
     void connection_manager::stop_all()
     {
-        std::for_each(connections_.begin(), connections_.end(), std::bind(&asio_http_session::stop, std::placeholders::_1, false));
+        std::for_each(connections_.begin(), connections_.end(), std::bind(&asio_http_session::stop, std::placeholders::_1));
         connections_.clear();
     }
 };
@@ -849,7 +839,7 @@ void asio_http_session::stop_connection(const boost::system::error_code & ec)
     {
         //if (connection_manager_)
         //    connection_manager_->stop(asio_http_session::shared_from_this());
-        stop(false);
+        stop();
     }
 }
 

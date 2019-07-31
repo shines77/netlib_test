@@ -44,8 +44,8 @@ void run_pingpong_client(const std::string & app_name, const std::string & ip,
 
         io_service.run();
     }
-    catch (const std::exception & e) {
-        std::cerr << "Exception: " << e.what() << std::endl;
+    catch (const std::exception & ex) {
+        std::cerr << "Exception: " << ex.what() << std::endl;
     }
     std::cout << app_name.c_str() << " done." << std::endl;
 }
@@ -69,8 +69,8 @@ void run_qps_client(const std::string & app_name, const std::string & ip,
 
         io_service.run();
     }
-    catch (const std::exception & e) {
-        std::cerr << "Exception: " << e.what() << std::endl;
+    catch (const std::exception & ex) {
+        std::cerr << "Exception: " << ex.what() << std::endl;
     }
     std::cout << app_name.c_str() << " done." << std::endl;
 }
@@ -94,8 +94,8 @@ void run_throughput_client(const std::string & app_name, const std::string & ip,
 
         io_service.run();
     }
-    catch (const std::exception & e) {
-        std::cerr << "Exception: " << e.what() << std::endl;
+    catch (const std::exception & ex) {
+        std::cerr << "Exception: " << ex.what() << std::endl;
     }
     std::cout << app_name.c_str() << " done." << std::endl;
 }
@@ -119,8 +119,8 @@ void run_latency_client(const std::string & app_name, const std::string & ip,
 
         io_service.run();
     }
-    catch (const std::exception & e) {
-        std::cerr << "Exception: " << e.what() << std::endl;
+    catch (const std::exception & ex) {
+        std::cerr << "Exception: " << ex.what() << std::endl;
     }
     std::cout << app_name.c_str() << " done." << std::endl;
 }
@@ -144,8 +144,8 @@ void run_http_client(const std::string & app_name, const std::string & ip,
 
         io_service.run();
     }
-    catch (const std::exception & e) {
-        std::cerr << "Exception: " << e.what() << std::endl;
+    catch (const std::exception & ex) {
+        std::cerr << "Exception: " << ex.what() << std::endl;
     }
     std::cout << app_name.c_str() << " done." << std::endl;
 }
@@ -250,7 +250,7 @@ int main(int argc, char * argv[])
     if (test_mode == "echo") {
         g_test_mode = test_mode_echo;
     }
-    if (test_mode == "http") {
+    else if (test_mode == "http") {
         g_test_mode = test_mode_http;
     }
     else {

@@ -13,29 +13,29 @@ namespace asio_test {
 
 class io_service_pool : private boost::noncopyable {
 private:
-    typedef boost::shared_ptr<boost::asio::io_service>			io_service_ptr;
-    typedef boost::shared_ptr<boost::asio::io_service::work>	io_work_ptr;
+    typedef boost::shared_ptr<boost::asio::io_service>          io_service_ptr;
+    typedef boost::shared_ptr<boost::asio::io_service::work>    io_work_ptr;
 
     /// The pool of io_services.
     std::vector<io_service_ptr> io_services_;
 
     /// The work that keeps the io_services running.
-    std::vector<io_work_ptr> workes_;
+    std::list<io_work_ptr> workes_;
 
     /// The next io_service to use for a connection.
-    std::atomic<uint32_t> next_io_service_;
+    std::atomic<std::size_t> next_io_service_;
 
 public:
     /// Construct the io_service pool.
-    explicit io_service_pool(uint32_t pool_size)
-        : next_io_service_(0)
+    explicit io_service_pool(std::size_t pool_size) : next_io_service_(0)
     {
-        if (pool_size == 0)
+        if (pool_size == 0) {
             throw std::runtime_error("io_service_pool size is 0.");
+        }
 
         // Give all the io_services work to do so that their run() functions will not
         // exit until they are explicitly stopped.
-        for (uint32_t i = 0; i < pool_size; ++i) {
+        for (std::size_t i = 0; i < pool_size; ++i) {
             io_service_ptr io_service(new boost::asio::io_service);
             io_work_ptr work(new boost::asio::io_service::work(*io_service));
             io_services_.push_back(io_service);
@@ -61,8 +61,10 @@ public:
         }
 
         // Wait for all threads in the pool to exit.
-        for (std::size_t i = 0; i < threads.size(); ++i)
-            threads[i]->join();
+        for (std::size_t i = 0; i < threads.size(); ++i) {
+            if (threads[i]->joinable())
+                threads[i]->join();
+        }
     }
 
     /// Stop all io_service objects in the pool.

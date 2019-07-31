@@ -180,16 +180,6 @@ void run_asio_http_server(const std::string & ip, const std::string & port,
                       << std::right << std::setw(6)
                       << std::setiosflags(std::ios::fixed) << std::setprecision(3)
                       << ((qps * response_html_size) * kBytes / (1024.0 * 1024.0))
-                      << " Mb/s" << ", "
-                      << "Recv BW: "
-                      << std::right << std::setw(6)
-                      << std::setiosflags(std::ios::fixed) << std::setprecision(3)
-                      << (g_recv_bytes * kBytes / (1024.0 * 1024.0) / total_time)
-                      << " Mb/s, "
-                      << "Send BW: "
-                      << std::right << std::setw(6)
-                      << std::setiosflags(std::ios::fixed) << std::setprecision(3)
-                      << (g_send_bytes * kBytes / (1024.0 * 1024.0) / total_time)
                       << " Mb/s" << std::endl;
             std::cout << std::right;
             last_query_count = cur_succeed_count;

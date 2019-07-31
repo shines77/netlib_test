@@ -10,6 +10,7 @@
 #include <boost/bind.hpp>
 #include <boost/asio.hpp>
 #include <boost/asio/error.hpp>
+#include <boost/asio/signal_set.hpp>
 
 #include "../common.h"
 #include "../io_service_pool.hpp"
@@ -42,6 +43,22 @@ public:
         : io_service_pool_(pool_size), acceptor_(io_service_pool_.get_first_io_service()),
           buffer_size_(buffer_size), packet_size_(packet_size)
     {
+#if defined(__linux__)
+        //
+        // See: https://codeday.me/bug/20181108/361396.html
+        //
+        // boost::asio::signal_set, Since boost 1.5.3
+        //
+        // Register signal handlers so that the daemon may be shut down. You may
+        // also want to register for other signals, such as SIGHUP to trigger a
+        // re-read of a configuration file.
+        //
+        boost::asio::signal_set signals(io_service, SIGINT, SIGTERM);
+        signals.async_wait([this](const boost::system::error_code & ec, int signal_no)
+                            {
+                                io_service_pool_.stop();
+                            });
+#endif
         start(ip_addr, port);
     }
 
@@ -115,7 +132,7 @@ private:
             std::cout << "async_asio_http_server::handle_accept() - Error: (code = " << ec.value() << ") "
                       << ec.message().c_str() << std::endl;
             if (session) {
-                session->stop(false);
+                session->stop();
                 delete session;
             }
         }        
@@ -143,7 +160,7 @@ private:
                     // Accept error
                     std::cout << "async_asio_http_server::handle_accept_lambda() - Error: (code = " << ec.value() << ") "
                               << ec.message().c_str() << std::endl;
-                    session_->stop(false);
+                    session_->stop();
                     session_.reset();
                 }
 
