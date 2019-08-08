@@ -292,7 +292,7 @@ public:
 
     void stop()
     {
-        if (socket_.native_handle()) {
+        if (socket_.is_open()) {
             init_shutdown();
 
 #if !defined(_WIN32_WINNT) || (_WIN32_WINNT >= 0x0600)

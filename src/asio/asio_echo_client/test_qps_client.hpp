@@ -113,10 +113,10 @@ private:
         duration<double> interval_time = duration_cast< duration<double> >(now_time - last_time_);
         double elapsed_time = interval_time.count();
         double avg_latency, avg_total_latency;
-        if (elapsed_time > 1.0) {
+        if (elapsed_time >= 1.0) {
             std::cout << "packet_size           = " << std::left << std::setw(8)
                       << packet_size_ << " B,  latency total     = "
-                      << last_total_latency_ << " ms" <<  std::endl;
+                      << last_total_latency_ << " sec." <<  std::endl;
             // average latency (one second interval)
             if (last_query_count_ != 0)
                 avg_latency = (last_total_latency_ * 1000.0) / (double)last_query_count_;
@@ -233,9 +233,10 @@ private:
             [this](const boost::system::error_code & ec, std::size_t recieved_bytes)
             {
                 if ((uint32_t)recieved_bytes != packet_size_) {
-                    std::cout << "test_qps_client::do_read(): async_read(), recieved_bytes = "
-                              << recieved_bytes << " bytes." << std::endl;
+                    //std::cout << "test_qps_client::do_read(): async_read(), recieved_bytes = "
+                    //          << recieved_bytes << " bytes." << std::endl;
                 }
+
                 if (!ec)
                 {
                     // Have recieved the response message
@@ -246,6 +247,35 @@ private:
                     display_counters();
 
                     do_write();
+                }
+                else {
+                    // Write error log
+                    std::cout << "test_qps_client::do_read() - Error: (code = " << ec.value() << ") "
+                              << ec.message().c_str() << std::endl;
+                }
+            });
+    }
+
+    void do_async_read_some()
+    {
+        socket_.async_read_some(boost::asio::buffer(recv_data_, buffer_size_),
+            [this](const boost::system::error_code & ec, std::size_t recieved_bytes)
+            {
+                if ((uint32_t)recieved_bytes != packet_size_) {
+                    //std::cout << "test_qps_client::do_read(): async_read(), recieved_bytes = "
+                    //          << recieved_bytes << " bytes." << std::endl;
+                }
+
+                if (!ec)
+                {
+                    // Have recieved the response message
+                    recieve_time_ = high_resolution_clock::now();
+                    if (recieved_bytes > 0)
+                        recieved_bytes_ += (uint32_t)recieved_bytes;
+
+                    display_counters();
+
+                    do_sync_write(kSendRepeatTimes);
                 }
                 else {
                     // Write error log
@@ -298,7 +328,7 @@ private:
             }
         }
 
-        do_read_some();
+        do_async_read_some();
     }
 
     void do_async_write_only()
